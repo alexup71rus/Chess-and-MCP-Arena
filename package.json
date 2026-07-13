@@ -18,7 +18,7 @@
   ],
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "start": "vite",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
