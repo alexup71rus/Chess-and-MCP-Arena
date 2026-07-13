@@ -8,6 +8,7 @@ import { Board } from "./components/Board";
 import { CapturedPieces } from "./components/CapturedPieces";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { GameStatusView } from "./components/GameStatusView";
+import { Icon } from "./components/Icon";
 import { MoveHistory } from "./components/MoveHistory";
 import { PromotionDialog } from "./components/PromotionDialog";
 import { ModeSelect, type Mode } from "./components/ModeSelect";
@@ -127,7 +128,7 @@ function LocalGame({ onExit }: { onExit: () => void }) {
             aria-label="Выйти в главное меню"
             onClick={() => setConfirmAction("exit")}
           >
-            <span aria-hidden="true">⌂</span>
+            <Icon name="arrow-right" />
           </button>
         </div>
 
@@ -162,18 +163,20 @@ function LocalGame({ onExit }: { onExit: () => void }) {
           <nav className="game-actions" aria-label="Управление партией">
             <button
               type="button"
-              className="btn"
+              className="btn game-action"
               onClick={() => dispatch({ type: "flip" })}
             >
-              ⇅ Доска
+              <Icon name="flip" />
+              Доска
             </button>
             <button
               type="button"
-              className="btn"
+              className="btn game-action"
               onClick={() => dispatch({ type: "undo" })}
               disabled={state.history.length === 0}
             >
-              ↶ Отменить ход
+              <Icon name="undo" />
+              Отменить ход
             </button>
           </nav>
 

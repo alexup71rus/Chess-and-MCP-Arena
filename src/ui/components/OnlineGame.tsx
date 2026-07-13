@@ -10,6 +10,7 @@ import { Board } from "./Board";
 import { CapturedPieces } from "./CapturedPieces";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { GameStatusView } from "./GameStatusView";
+import { Icon } from "./Icon";
 import { PromotionDialog } from "./PromotionDialog";
 
 interface OnlineGameProps {
@@ -106,7 +107,7 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
             aria-label="Выйти в главное меню"
             onClick={() => setConfirmAction("exit")}
           >
-            <span aria-hidden="true">⌂</span>
+            <Icon name="arrow-right" />
           </button>
         </div>
 
@@ -302,11 +303,12 @@ function ControlsOnline({
   return (
     <button
       type="button"
-      className="btn game-actions__wide"
+      className="btn game-action game-actions__wide"
       aria-label={isFlipped ? "Вернуть обычный вид доски" : "Перевернуть доску"}
       onClick={onFlip}
     >
-      ⇅ Доска
+      <Icon name="flip" />
+      Доска
     </button>
   );
 }
@@ -327,8 +329,9 @@ function WaitingScreen({
         <section className="modeselect">
           <p>Подключение к активной партии…</p>
           {error && <p className="modeselect__error">{error}</p>}
-          <button type="button" className="btn" onClick={onExit}>
-            ← Назад
+          <button type="button" className="btn game-action" onClick={onExit}>
+            <Icon name="arrow-left" />
+            Назад
           </button>
         </section>
       </main>
