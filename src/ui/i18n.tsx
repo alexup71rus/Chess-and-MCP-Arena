@@ -12,6 +12,8 @@ export type Locale = "ru" | "en" | "zh-CN";
 
 type Messages = {
   language: string;
+  soundOn: string;
+  soundOff: string;
   localeName: string;
   title: string;
   chooseMode: string;
@@ -75,6 +77,8 @@ type Messages = {
 const messages: Record<Locale, Messages> = {
   ru: {
     language: "Язык",
+    soundOn: "Звук включён",
+    soundOff: "Звук выключен",
     localeName: "Русский",
     title: "♛ Шахматы",
     chooseMode: "Выберите режим игры",
@@ -140,6 +144,8 @@ const messages: Record<Locale, Messages> = {
   },
   en: {
     language: "Language",
+    soundOn: "Sound on",
+    soundOff: "Sound off",
     localeName: "English",
     title: "♛ Chess",
     chooseMode: "Choose a game mode",
@@ -206,6 +212,8 @@ const messages: Record<Locale, Messages> = {
   },
   "zh-CN": {
     language: "语言",
+    soundOn: "声音已开启",
+    soundOff: "声音已关闭",
     localeName: "简体中文",
     title: "♛ 国际象棋",
     chooseMode: "选择对局模式",

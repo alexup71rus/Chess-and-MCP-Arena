@@ -4,16 +4,18 @@
 import { useCallback, useState } from "react";
 import type { Color, PieceType, Square } from "@/engine";
 import { useChessGame } from "./hooks/useChessGame";
-import { Board } from "./components/Board";
+import { Board, type MoveFeedback } from "./components/Board";
 import { CapturedPieces } from "./components/CapturedPieces";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { GameStatusView } from "./components/GameStatusView";
 import { Icon } from "./components/Icon";
 import { MoveHistory } from "./components/MoveHistory";
 import { PromotionDialog } from "./components/PromotionDialog";
+import { SoundToggle } from "./components/SoundToggle";
 import { ModeSelect, type Mode } from "./components/ModeSelect";
 import { OnlineGame } from "./components/OnlineGame";
 import { createGame } from "./hooks/useOnlineChessGame";
+import { useMoveSounds } from "./hooks/useMoveSounds";
 import { LanguageSwitcher, useI18n } from "./i18n";
 
 type View =
@@ -72,6 +74,19 @@ function LocalGame({ onExit }: { onExit: () => void }) {
   const [confirmAction, setConfirmAction] = useState<"new" | "exit" | null>(
     null,
   );
+  const [muted, setMuted] = useState(true);
+  const { play, unlock } = useMoveSounds(!muted);
+
+  const toggleSound = useCallback(() => {
+    if (muted) unlock();
+    setMuted((value) => !value);
+  }, [muted, unlock]);
+
+  const onMovePlayed = useCallback(
+    ({ capture, check }: MoveFeedback) =>
+      play(check ? "check" : capture ? "capture" : "move"),
+    [play],
+  );
 
   const handleSquareClick = useCallback(
     (square: Square) => {
@@ -101,7 +116,10 @@ function LocalGame({ onExit }: { onExit: () => void }) {
   return (
     <div className="app app--game">
       <header className="app__header">
-        <LanguageSwitcher />
+        <div className="header-controls">
+          <LanguageSwitcher />
+          <SoundToggle muted={muted} onToggle={toggleSound} />
+        </div>
         <h1 className="app__title">{t.title}</h1>
         <p className="app__subtitle">{t.localSubtitle}</p>
       </header>
@@ -141,6 +159,19 @@ function LocalGame({ onExit }: { onExit: () => void }) {
             lastMove={state.lastMove}
             checkSquare={inCheckSquare}
             flipped={state.flipped}
+            moveFeedback={
+              state.history.length
+                ? {
+                    capture: ["capture", "en-passant"].includes(
+                      state.history[state.history.length - 1].move.flag,
+                    ),
+                    check: /[+#]$/.test(
+                      state.history[state.history.length - 1].san,
+                    ),
+                  }
+                : null
+            }
+            onMovePlayed={onMovePlayed}
             onSquareClick={handleSquareClick}
           />
           {state.pendingPromotion && (

@@ -6,13 +6,15 @@ import {
   createGame,
   useOnlineChessGame,
 } from "../hooks/useOnlineChessGame";
-import { Board } from "./Board";
+import { Board, type MoveFeedback } from "./Board";
 import { CapturedPieces } from "./CapturedPieces";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { GameStatusView } from "./GameStatusView";
 import { Icon } from "./Icon";
 import { PromotionDialog } from "./PromotionDialog";
+import { SoundToggle } from "./SoundToggle";
 import { LanguageSwitcher, useI18n } from "../i18n";
+import { useMoveSounds } from "../hooks/useMoveSounds";
 
 interface OnlineGameProps {
   mode: OnlineMode;
@@ -26,6 +28,19 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
   const [restarting, setRestarting] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"new" | "exit" | null>(
     null,
+  );
+  const [muted, setMuted] = useState(true);
+  const { play, unlock } = useMoveSounds(!muted);
+
+  const toggleSound = useCallback(() => {
+    if (muted) unlock();
+    setMuted((value) => !value);
+  }, [muted, unlock]);
+
+  const onMovePlayed = useCallback(
+    ({ capture, check }: MoveFeedback) =>
+      play(check ? "check" : capture ? "capture" : "move"),
+    [play],
   );
 
   useEffect(() => {
@@ -75,7 +90,10 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
   return (
     <div className="app app--game">
       <header className="app__header">
-        <LanguageSwitcher />
+        <div className="header-controls">
+          <LanguageSwitcher />
+          <SoundToggle muted={muted} onToggle={toggleSound} />
+        </div>
         <h1 className="app__title">{t.title}</h1>
         <p className="app__subtitle">
           {mode === "human-vs-agent"
@@ -120,6 +138,15 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
             lastMove={online.lastMoveSquares}
             checkSquare={online.inCheckSquare}
             flipped={state.flipped}
+            moveFeedback={
+              snapshot.lastMove
+                ? {
+                    capture: snapshot.lastMove.san.includes("x"),
+                    check: /[+#]$/.test(snapshot.lastMove.san),
+                  }
+                : null
+            }
+            onMovePlayed={onMovePlayed}
             onSquareClick={online.onSquareClick}
           />
           {state.pendingPromotion && (

@@ -1,6 +1,6 @@
 // Доска: сетка 8×8 с координатами, подсветкой и обработкой кликов.
 
-import { memo, useLayoutEffect, useRef } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Position, Square } from "@/engine";
 import { fileOf, rankOf } from "@/engine";
 import { Piece } from "./Piece";
@@ -13,7 +13,14 @@ interface BoardProps {
   lastMove: { from: Square; to: Square } | null;
   checkSquare: Square | null;
   flipped: boolean;
+  moveFeedback: MoveFeedback | null;
+  onMovePlayed: (feedback: MoveFeedback) => void;
   onSquareClick: (square: Square) => void;
+}
+
+export interface MoveFeedback {
+  capture: boolean;
+  check: boolean;
 }
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -24,6 +31,8 @@ function BoardImpl({
   lastMove,
   checkSquare,
   flipped,
+  moveFeedback,
+  onMovePlayed,
   onSquareClick,
 }: BoardProps) {
   const { pieceName: getPieceName } = useI18n();
@@ -32,6 +41,18 @@ function BoardImpl({
   const squareRefs = useRef(new Map<Square, HTMLButtonElement>());
   const pieceRefs = useRef(new Map<Square, HTMLSpanElement>());
   const activeAnimation = useRef<Animation | null>(null);
+  const captureTimer = useRef<number | null>(null);
+  const [captureEffect, setCaptureEffect] = useState<{
+    square: Square;
+    id: number;
+  } | null>(null);
+
+  useEffect(
+    () => () => {
+      if (captureTimer.current) window.clearTimeout(captureTimer.current);
+    },
+    [],
+  );
 
   useLayoutEffect(() => {
     const previous = previousMove.current;
@@ -44,6 +65,16 @@ function BoardImpl({
     if (!lastMove) return;
     if (previous?.from === lastMove.from && previous.to === lastMove.to) {
       return;
+    }
+
+    if (moveFeedback) onMovePlayed(moveFeedback);
+    if (moveFeedback?.capture) {
+      if (captureTimer.current) window.clearTimeout(captureTimer.current);
+      setCaptureEffect({ square: lastMove.to, id: Date.now() });
+      captureTimer.current = window.setTimeout(
+        () => setCaptureEffect(null),
+        560,
+      );
     }
 
     const from = squareRefs.current.get(lastMove.from);
@@ -75,7 +106,7 @@ function BoardImpl({
     animation.onfinish = () => {
       if (activeAnimation.current === animation) activeAnimation.current = null;
     };
-  }, [lastMove, position.board]);
+  }, [lastMove, moveFeedback, onMovePlayed, position.board]);
 
   // Порядок обхода клеток зависит от ориентации доски.
   const ranks = flipped ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
@@ -160,6 +191,14 @@ function BoardImpl({
               )}
               {isTarget && !isCapture && <span className="square__hint" />}
               {isCapture && <span className="square__capture-ring" />}
+              {captureEffect?.square === sq && (
+                <span className="square__capture-effect" key={captureEffect.id}>
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              )}
             </button>
           );
         }),
