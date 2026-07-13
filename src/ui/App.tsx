@@ -14,6 +14,7 @@ import { PromotionDialog } from "./components/PromotionDialog";
 import { ModeSelect, type Mode } from "./components/ModeSelect";
 import { OnlineGame } from "./components/OnlineGame";
 import { createGame } from "./hooks/useOnlineChessGame";
+import { LanguageSwitcher, useI18n } from "./i18n";
 
 type View =
   | { kind: "menu" }
@@ -23,8 +24,6 @@ type View =
       mode: "human-vs-agent" | "agent-vs-agent";
       humanColor: Color | null;
     };
-
-const COLOR_NAME: Record<Color, string> = { w: "Белые", b: "Чёрные" };
 
 export default function App() {
   const [view, setView] = useState<View>({ kind: "menu" });
@@ -68,6 +67,7 @@ export default function App() {
 
 /** Локальная hot-seat игра (как до интеграции с MCP), плюс кнопка выхода в меню. */
 function LocalGame({ onExit }: { onExit: () => void }) {
+  const { t } = useI18n();
   const { state, dispatch, inCheckSquare, legalTargets } = useChessGame();
   const [confirmAction, setConfirmAction] = useState<"new" | "exit" | null>(
     null,
@@ -101,11 +101,12 @@ function LocalGame({ onExit }: { onExit: () => void }) {
   return (
     <div className="app app--game">
       <header className="app__header">
-        <h1 className="app__title">♛ Шахматы</h1>
-        <p className="app__subtitle">Классическая партия — горячие места</p>
+        <LanguageSwitcher />
+        <h1 className="app__title">{t.title}</h1>
+        <p className="app__subtitle">{t.localSubtitle}</p>
       </header>
 
-      <main className="game-layout" aria-label="Шахматная партия">
+      <main className="game-layout" aria-label={t.gameLabel}>
         <div className="game-layout__top-player">
           <PlayerRail
             color={topColor}
@@ -120,12 +121,12 @@ function LocalGame({ onExit }: { onExit: () => void }) {
             className="btn btn--primary game-layout__new-game"
             onClick={() => setConfirmAction("new")}
           >
-            Новая партия
+            {t.newGame}
           </button>
           <button
             type="button"
             className="btn icon-btn"
-            aria-label="Выйти в главное меню"
+            aria-label={t.exitToMenu}
             onClick={() => setConfirmAction("exit")}
           >
             <Icon name="arrow-right" />
@@ -160,14 +161,14 @@ function LocalGame({ onExit }: { onExit: () => void }) {
         </div>
 
         <aside className="game-sidebar">
-          <nav className="game-actions" aria-label="Управление партией">
+          <nav className="game-actions" aria-label={t.controlsLabel}>
             <button
               type="button"
               className="btn game-action"
               onClick={() => dispatch({ type: "flip" })}
             >
               <Icon name="flip" />
-              Доска
+              {t.flipBoard}
             </button>
             <button
               type="button"
@@ -176,7 +177,7 @@ function LocalGame({ onExit }: { onExit: () => void }) {
               disabled={state.history.length === 0}
             >
               <Icon name="undo" />
-              Отменить ход
+              {t.undo}
             </button>
           </nav>
 
@@ -188,15 +189,13 @@ function LocalGame({ onExit }: { onExit: () => void }) {
 
       {confirmAction && (
         <ConfirmDialog
-          title={
-            confirmAction === "new" ? "Начать новую партию?" : "Выйти в меню?"
-          }
+          title={confirmAction === "new" ? t.newGameTitle : t.exitTitle}
           description={
             confirmAction === "new"
-              ? "Текущий прогресс партии будет сброшен."
-              : "Текущая партия будет закрыта."
+              ? t.resetLocalDescription
+              : t.exitLocalDescription
           }
-          confirmLabel={confirmAction === "new" ? "Начать заново" : "Выйти"}
+          confirmLabel={confirmAction === "new" ? t.restart : t.exit}
           onCancel={() => setConfirmAction(null)}
           onConfirm={() => {
             if (confirmAction === "new") dispatch({ type: "new-game" });
@@ -218,9 +217,10 @@ function PlayerRail({
   active: boolean;
   board: Parameters<typeof CapturedPieces>[0]["board"];
 }) {
+  const { colorName } = useI18n();
   return (
     <div className={`game-side ${active ? "game-side--active" : ""}`}>
-      <span className="game-side__label">{COLOR_NAME[color]}</span>
+      <span className="game-side__label">{colorName(color)}</span>
       <CapturedPieces board={board} side={color} />
     </div>
   );

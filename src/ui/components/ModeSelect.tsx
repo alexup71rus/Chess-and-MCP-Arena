@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LanguageSwitcher, useI18n } from "../i18n";
 
 export type Mode = "local" | "human-vs-agent" | "agent-vs-agent";
 
@@ -7,6 +8,7 @@ interface ModeSelectProps {
 }
 
 export function ModeSelect({ onSelect }: ModeSelectProps) {
+  const { t, colorName } = useI18n();
   const [mode, setMode] = useState<Mode | null>(null);
   const [humanColor, setHumanColor] = useState<"w" | "b">("w");
   const [busy, setBusy] = useState(false);
@@ -27,8 +29,9 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
   return (
     <div className="app">
       <header className="app__header">
-        <h1 className="app__title">♛ Шахматы</h1>
-        <p className="app__subtitle">Выберите режим игры</p>
+        <LanguageSwitcher />
+        <h1 className="app__title">{t.title}</h1>
+        <p className="app__subtitle">{t.chooseMode}</p>
       </header>
 
       <main className="app__main app__main--menu">
@@ -37,22 +40,22 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
             <ModeCard
               active={mode === "local"}
               icon="👥"
-              title="Локально"
-              description="Два человека за одним экраном. Без сервера и агентов."
+              title={t.localMode}
+              description={t.localDescription}
               onClick={() => setMode("local")}
             />
             <ModeCard
               active={mode === "human-vs-agent"}
               icon="🧑‍💻🆚🤖"
-              title="Человек против агента"
-              description="Ты ходишь на доске, агент подключается через MCP."
+              title={t.humanVsAgent}
+              description={t.humanVsAgentDescription}
               onClick={() => setMode("human-vs-agent")}
             />
             <ModeCard
               active={mode === "agent-vs-agent"}
               icon="🤖🆚🤖"
-              title="Агент против агента"
-              description="Два MCP-агента играют, ты наблюдаешь."
+              title={t.agentVsAgent}
+              description={t.agentVsAgentDescription}
               onClick={() => setMode("agent-vs-agent")}
             />
           </div>
@@ -65,7 +68,7 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
                 onClick={() => void start()}
                 disabled={busy}
               >
-                Начать локальную партию
+                {t.startLocal}
               </button>
             </div>
           )}
@@ -73,7 +76,7 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
           {mode === "human-vs-agent" && (
             <div className="modeselect__panel">
               <div className="modeselect__row">
-                <span className="modeselect__label">Твой цвет:</span>
+                <span className="modeselect__label">{t.yourColor}</span>
                 <label className="modeselect__radio">
                   <input
                     type="radio"
@@ -81,7 +84,7 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
                     checked={humanColor === "w"}
                     onChange={() => setHumanColor("w")}
                   />{" "}
-                  Белые
+                  {colorName("w")}
                 </label>
                 <label className="modeselect__radio">
                   <input
@@ -90,7 +93,7 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
                     checked={humanColor === "b"}
                     onChange={() => setHumanColor("b")}
                   />{" "}
-                  Чёрные
+                  {colorName("b")}
                 </label>
               </div>
               <button
@@ -99,12 +102,9 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
                 onClick={() => void start({ humanColor })}
                 disabled={busy}
               >
-                {busy ? "Создаём…" : "Начать матч"}
+                {busy ? t.creating : t.startMatch}
               </button>
-              <p className="modeselect__hint">
-                После старта попроси агента вызвать <code>join_game</code>.
-                Свободная сторона определится автоматически.
-              </p>
+              <p className="modeselect__hint">{t.humanHint}</p>
             </div>
           )}
 
@@ -116,12 +116,9 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
                 onClick={() => void start()}
                 disabled={busy}
               >
-                {busy ? "Создаём…" : "Начать матч для агентов"}
+                {busy ? t.creating : t.startAgentMatch}
               </button>
-              <p className="modeselect__hint">
-                Первый агент вызывает <code>join_game</code> с выбранным цветом,
-                второй получает оставшуюся сторону.
-              </p>
+              <p className="modeselect__hint">{t.agentHint}</p>
             </div>
           )}
 

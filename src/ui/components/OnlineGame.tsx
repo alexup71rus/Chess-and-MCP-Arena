@@ -12,6 +12,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { GameStatusView } from "./GameStatusView";
 import { Icon } from "./Icon";
 import { PromotionDialog } from "./PromotionDialog";
+import { LanguageSwitcher, useI18n } from "../i18n";
 
 interface OnlineGameProps {
   mode: OnlineMode;
@@ -19,9 +20,8 @@ interface OnlineGameProps {
   onExit: () => void;
 }
 
-const COLOR_NAME: Record<Color, string> = { w: "Белые", b: "Чёрные" };
-
 export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
+  const { t } = useI18n();
   const online = useOnlineChessGame();
   const [restarting, setRestarting] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"new" | "exit" | null>(
@@ -75,15 +75,16 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
   return (
     <div className="app app--game">
       <header className="app__header">
-        <h1 className="app__title">♛ Шахматы</h1>
+        <LanguageSwitcher />
+        <h1 className="app__title">{t.title}</h1>
         <p className="app__subtitle">
           {mode === "human-vs-agent"
-            ? "Человек против агента"
-            : "Агент против агента · наблюдение"}
+            ? t.humanVsAgent
+            : `${t.agentVsAgent} · ${t.spectating}`}
         </p>
       </header>
 
-      <main className="game-layout" aria-label="Шахматная партия">
+      <main className="game-layout" aria-label={t.gameLabel}>
         <div className="game-layout__top-player">
           <PlayerRail
             color={topColor}
@@ -99,12 +100,12 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
             onClick={() => setConfirmAction("new")}
             disabled={!terminal || restarting}
           >
-            {restarting ? "Создаём…" : "Новая партия"}
+            {restarting ? t.creating : t.newGame}
           </button>
           <button
             type="button"
             className="btn icon-btn"
-            aria-label="Выйти в главное меню"
+            aria-label={t.exitToMenu}
             onClick={() => setConfirmAction("exit")}
           >
             <Icon name="arrow-right" />
@@ -139,7 +140,7 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
         </div>
 
         <aside className="game-sidebar">
-          <nav className="game-actions" aria-label="Управление партией">
+          <nav className="game-actions" aria-label={t.controlsLabel}>
             <ControlsOnline isFlipped={state.flipped} onFlip={online.flip} />
           </nav>
 
@@ -155,15 +156,13 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
 
       {confirmAction && (
         <ConfirmDialog
-          title={
-            confirmAction === "new" ? "Начать новую партию?" : "Выйти в меню?"
-          }
+          title={confirmAction === "new" ? t.newGameTitle : t.exitTitle}
           description={
             confirmAction === "new"
-              ? "Текущая онлайн-партия будет заменена новой."
-              : "Текущая онлайн-партия будет закрыта для этого клиента."
+              ? t.resetOnlineDescription
+              : t.exitOnlineDescription
           }
-          confirmLabel={confirmAction === "new" ? "Начать заново" : "Выйти"}
+          confirmLabel={confirmAction === "new" ? t.restart : t.exit}
           onCancel={() => setConfirmAction(null)}
           onConfirm={() => {
             if (confirmAction === "new") void restart();
@@ -185,8 +184,9 @@ function PlayerRail({
   snapshot: GameSnapshot;
   board: Parameters<typeof CapturedPieces>[0]["board"];
 }) {
+  const { t, colorName } = useI18n();
   const player = snapshot.players[color];
-  const detail = player === "human" ? "Человек" : "Агент";
+  const detail = player === "human" ? t.playerHuman : t.playerAgent;
   return (
     <div
       className={`game-side ${
@@ -194,7 +194,7 @@ function PlayerRail({
       }`}
     >
       <span className="game-side__label">
-        {COLOR_NAME[color]} · {detail}
+        {colorName(color)} · {detail}
       </span>
       <CapturedPieces board={board} side={color} />
     </div>
@@ -208,12 +208,13 @@ function AgentConnections({
   snapshot: GameSnapshot;
   connected: boolean;
 }) {
+  const { t, colorName } = useI18n();
   const agentColors = (["w", "b"] as Color[]).filter(
     (color) => snapshot.players[color] === "agent",
   );
 
   return (
-    <div className="agent-connections" aria-label="Подключения агентов">
+    <div className="agent-connections" aria-label={t.connectionsLabel}>
       {agentColors.map((color) => {
         const isConnected = connected && snapshot.agentConnected[color];
         const tone = !connected
@@ -222,17 +223,17 @@ function AgentConnections({
             ? "connected"
             : "waiting";
         const status = !connected
-          ? "Нет связи"
+          ? t.noConnection
           : isConnected
-            ? "Подключён"
-            : "Ожидается";
+            ? t.connected
+            : t.waiting;
         return (
           <div
             className={`agent-connection agent-connection--${tone}`}
             key={color}
           >
             <span className="agent-connection__side">
-              Агент · {COLOR_NAME[color]}
+              {t.playerAgent} · {colorName(color)}
             </span>
             <span className="agent-connection__status">
               <span className="agent-connection__dot" aria-hidden="true" />
@@ -252,15 +253,19 @@ function OnlineNotice({
   submitting: boolean;
   error: string | null;
 }) {
+  const { t } = useI18n();
   if (!error && !submitting) return null;
   return (
     <div className={`game-notice ${error ? "game-notice--error" : ""}`}>
-      {error ? `⚠ ${error}` : "Отправка хода…"}
+      {error
+        ? `⚠ ${error === "connection-lost" ? t.connectionLost : error}`
+        : t.sendingMove}
     </div>
   );
 }
 
 function OnlineMoveHistory({ sans }: { sans: string[] }) {
+  const { t } = useI18n();
   const listRef = useRef<HTMLDivElement>(null);
   const rows: Array<{ no: number; white?: string; black?: string }> = [];
   for (let index = 0; index < sans.length; index++) {
@@ -276,10 +281,10 @@ function OnlineMoveHistory({ sans }: { sans: string[] }) {
 
   return (
     <div className="history">
-      <div className="history__head">Ходы партии</div>
+      <div className="history__head">{t.history}</div>
       <div className="history__list" ref={listRef}>
         {rows.length === 0 && (
-          <div className="history__empty">Партия ещё не началась</div>
+          <div className="history__empty">{t.gameNotStarted}</div>
         )}
         {rows.map((row) => (
           <div className="history__row" key={row.no}>
@@ -300,15 +305,16 @@ function ControlsOnline({
   isFlipped: boolean;
   onFlip: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
       className="btn game-action game-actions__wide"
-      aria-label={isFlipped ? "Вернуть обычный вид доски" : "Перевернуть доску"}
+      aria-label={isFlipped ? t.resetBoard : t.flipBoard}
       onClick={onFlip}
     >
       <Icon name="flip" />
-      Доска
+      {t.flipBoard}
     </button>
   );
 }
@@ -320,18 +326,20 @@ function WaitingScreen({
   error: string | null;
   onExit: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="app">
       <header className="app__header">
-        <h1 className="app__title">♛ Шахматы</h1>
+        <LanguageSwitcher />
+        <h1 className="app__title">{t.title}</h1>
       </header>
       <main className="app__main app__main--menu">
         <section className="modeselect">
-          <p>Подключение к активной партии…</p>
+          <p>{t.connecting}</p>
           {error && <p className="modeselect__error">{error}</p>}
           <button type="button" className="btn game-action" onClick={onExit}>
             <Icon name="arrow-left" />
-            Назад
+            {t.back}
           </button>
         </section>
       </main>

@@ -4,6 +4,7 @@ import { memo, useLayoutEffect, useRef } from "react";
 import type { Position, Square } from "@/engine";
 import { fileOf, rankOf } from "@/engine";
 import { Piece } from "./Piece";
+import { useI18n } from "../i18n";
 
 interface BoardProps {
   position: Position;
@@ -16,25 +17,6 @@ interface BoardProps {
 }
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
-const PIECE_NAME = {
-  w: {
-    p: "белая пешка",
-    n: "белый конь",
-    b: "белый слон",
-    r: "белая ладья",
-    q: "белый ферзь",
-    k: "белый король",
-  },
-  b: {
-    p: "чёрная пешка",
-    n: "чёрный конь",
-    b: "чёрный слон",
-    r: "чёрная ладья",
-    q: "чёрный ферзь",
-    k: "чёрный король",
-  },
-} as const;
-
 function BoardImpl({
   position,
   selected,
@@ -44,6 +26,7 @@ function BoardImpl({
   flipped,
   onSquareClick,
 }: BoardProps) {
+  const { pieceName: getPieceName } = useI18n();
   const hasRendered = useRef(false);
   const previousMove = useRef(lastMove);
   const squareRefs = useRef(new Map<Square, HTMLButtonElement>());
@@ -112,7 +95,9 @@ function BoardImpl({
             lastMove !== null && (lastMove.from === sq || lastMove.to === sq);
           const isCheck = checkSquare === sq;
           const squareName = FILES[f] + (r + 1);
-          const pieceName = piece ? PIECE_NAME[piece.color][piece.type] : null;
+          const pieceName = piece
+            ? getPieceName(piece.color, piece.type)
+            : null;
           const showFileLabel = r === (flipped ? 7 : 0);
           const showRankLabel = f === (flipped ? 0 : 7);
 

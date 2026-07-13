@@ -1,67 +1,72 @@
 # ♛ Chess! and MCP Arena
 
-Локальная шахматная арена для людей и MCP-агентов. React-интерфейс, шахматный
-движок, stateful HTTP MCP и обновления доски по SSE работают в одном процессе.
+**Language:** English · [Русский](./README.ru.md) · [简体中文](./README.zh-CN.md)
 
-![Интерфейс Chess! and MCP Arena: матч агент против агента](./image.png)
+Local chess arena for people and MCP agents. The React interface, chess engine,
+stateful HTTP MCP, and live board updates over SSE run in a single process.
 
-## Возможности
+![Chess! and MCP Arena interface in English](./docs/screenshots/arena-en.jpg)
 
-- Локальная партия для двух игроков за одним экраном.
-- Матч «человек против агента» с выбором цвета в интерфейсе.
-- Наблюдение за матчем «агент против агента» в реальном времени.
-- Закрепление стороны за конкретной MCP-сессией: агент не может сходить за
-  соперника или случайно занять обе стороны.
-- Полные базовые правила: шах, мат, пат, рокировка, взятие на проходе,
-  превращение пешки и ничьи по 50 ходам, троекратному повторению и
-  недостаточному материалу.
-- SAN-история ходов, взятые фигуры, переворот доски и подтверждение действий,
-  которые сбрасывают или закрывают партию.
+## Features
 
-## Быстрый старт
+- A local game for two people sharing one screen.
+- Human-versus-agent matches with color selection in the UI.
+- Live spectating of agent-versus-agent matches.
+- A side is bound to one MCP session: an agent cannot move for its opponent or
+  accidentally claim both sides.
+- Complete core chess rules: check, checkmate, stalemate, castling, en passant,
+  promotion, and draws by the fifty-move rule, threefold repetition, or
+  insufficient material.
+- SAN move history, captured pieces, board flip, and confirmations for actions
+  that reset or close a game.
+- Interface localization for English, Russian, and Simplified Chinese. The app
+  follows the browser language, with English as the fallback.
 
-Нужны Node.js LTS и pnpm 10.
+## Quick start
+
+Node.js LTS and pnpm 10 are required.
 
 ```bash
 pnpm install
 pnpm start
 ```
 
-Откройте [http://127.0.0.1:5173](http://127.0.0.1:5173). Порт намеренно
-фиксирован: если `5173` уже занят, Vite завершится ошибкой — UI и MCP-клиенты
-не смогут незаметно оказаться в разных процессах.
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173). The port is intentionally
+fixed: if `5173` is already occupied, Vite exits instead of silently putting
+the UI and MCP clients in separate processes.
 
-| Адрес       | Назначение                             |
-| ----------- | -------------------------------------- |
-| `/`         | Игровой интерфейс                      |
-| `/mcp`      | Stateful Streamable HTTP MCP endpoint  |
-| `/api/game` | Состояние текущего online-матча для UI |
-| `/events`   | SSE-обновления доски                   |
-| `/health`   | Health check                           |
+| Address     | Purpose                               |
+| ----------- | ------------------------------------- |
+| `/`         | Game interface                        |
+| `/mcp`      | Stateful Streamable HTTP MCP endpoint |
+| `/api/game` | Current online-match state for the UI |
+| `/events`   | SSE board updates                     |
+| `/health`   | Health check                          |
 
-## Режимы
+## Modes
 
-### Локально
+### Local
 
-Два человека играют в браузере. MCP-подключение не требуется.
+Two people play in the browser. No MCP connection is required.
 
-### Человек против агента
+### Human versus agent
 
-Пользователь выбирает белых или чёрных и ходит через UI. После создания матча
-агент подключается к MCP и занимает единственную свободную сторону.
+The person chooses White or Black and plays in the UI. After the match is
+created, an agent connects through MCP and takes the only available side.
 
-### Агент против агента
+### Agent versus agent
 
-Пользователь создаёт матч и наблюдает его в браузере. Первый агент вызывает
-`join_game({ color: "w" })` или `join_game({ color: "b" })`; второй вызывает
-`join_game()` и получает оставшийся цвет.
+The person creates a match and watches in the browser. The first agent calls
+`join_game({ color: "w" })` or `join_game({ color: "b" })`; the second calls
+`join_game()` and receives the remaining side.
 
-Online-матч всегда один: его создаёт или заменяет только пользователь в UI.
-Комнат, идентификаторов партий и удалённого сброса от агента нет.
+Only one online match exists at a time. It is created or replaced by a person
+in the UI; agents cannot create rooms, choose game identifiers, or remotely
+reset a match.
 
-## Подключение MCP-клиента
+## Connect an MCP client
 
-Добавьте endpoint в конфигурацию MCP-клиента:
+Add this endpoint to the MCP client's configuration:
 
 ```json
 {
@@ -73,50 +78,43 @@ Online-матч всегда один: его создаёт или заменя
 }
 ```
 
-Полные примеры конфигурации — в [mcp-config-examples.md](./mcp-config-examples.md).
+Complete configuration examples are in
+[mcp-config-examples.md](./mcp-config-examples.md).
 
-Типичный цикл агента после создания партии:
+Typical agent loop after a person creates a game:
 
 1. `join_game({ color? })`
 2. `get_state()`
 3. `legal_moves({ from })`
 4. `make_move({ move, promotion? })`
-5. После своего хода — ожидание соперника.
+5. Wait for the opponent after making a move.
 
-Сторона хранится в MCP-сессии, поэтому `make_move` не принимает цвет и не
-позволяет сделать ход за противника. Детальная инструкция для агента:
+The side is stored in the MCP session, so `make_move` takes no color and
+cannot move for the other side. See the complete agent guide:
 [chess-play](./.agents/skills/chess-play/SKILL.md).
 
-## Проверка качества
+## Quality checks
 
 ```bash
 pnpm verify
 ```
 
-Команда запускает проверку TypeScript, ESLint, Prettier и Vitest. Набор тестов
-покрывает шахматный движок, специальные правила, терминальные состояния,
-ownership сторон, stateful MCP-сессии, UI API и SSE.
+This runs TypeScript, ESLint, Prettier, and Vitest. The test suite covers the
+chess engine, special rules, terminal states, side ownership, stateful MCP
+sessions, the UI API, and SSE.
 
-## Устройство проекта
+## Project layout
 
 ```text
 src/
-├── engine/                 шахматные правила, FEN и SAN
+├── engine/                 chess rules, FEN, and SAN
 ├── mcp/
-│   ├── engineApi.ts        единственная active-партия и ownership сторон
-│   ├── server.ts           MCP-инструменты и инструкция агенту
-│   └── httpServer.ts       HTTP MCP, UI API, health и SSE
-└── ui/                     React-интерфейс локальной и online-игры
+│   ├── engineApi.ts        one active game and side ownership
+│   ├── server.ts           MCP tools and agent guidance
+│   └── httpServer.ts       HTTP MCP, UI API, health, and SSE
+└── ui/                     React interface for local and online games
 ```
 
-## Ограничение текущего запуска
+## License
 
-Это локальный Node/Vite-рантайм, а не статический сайт: состояние online-партии
-и MCP-сессии хранятся в памяти процесса. Поэтому GitHub Pages подходит только
-для статического UI и не даст рабочие режимы с агентами. Для публичного
-развёртывания MCP-матчей понадобится Node-хостинг и отдельное решение для
-хранения состояния.
-
-## Лицензия
-
-Проект распространяется по [лицензии MIT](./LICENSE).
+Distributed under the [MIT License](./LICENSE).

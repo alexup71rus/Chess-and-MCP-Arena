@@ -121,7 +121,7 @@ export function useOnlineChessGame() {
       setState((previous) => ({
         ...previous,
         connected: false,
-        error: "Соединение с шахматным сервером потеряно",
+        error: "connection-lost",
       }));
     source.onmessage = (event) => {
       try {

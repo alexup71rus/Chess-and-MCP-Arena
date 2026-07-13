@@ -2,6 +2,7 @@
 
 import type { Color } from "@/engine";
 import { pieceGlyph } from "../pieces";
+import { useI18n } from "../i18n";
 
 interface PromotionDialogProps {
   color: Color;
@@ -16,10 +17,11 @@ export function PromotionDialog({
   onSelect,
   onCancel,
 }: PromotionDialogProps) {
+  const { t } = useI18n();
   return (
     <div className="overlay" onClick={onCancel}>
       <div className="promotion" onClick={(e) => e.stopPropagation()}>
-        <h3 className="promotion__title">Выберите фигуру</h3>
+        <h3 className="promotion__title">{t.choosePromotion}</h3>
         <div className="promotion__options">
           {OPTIONS.map((t) => (
             <button

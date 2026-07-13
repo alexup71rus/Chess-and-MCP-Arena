@@ -2,12 +2,14 @@
 
 import { useEffect, useRef } from "react";
 import type { HistoryEntry } from "../hooks/useChessGame";
+import { useI18n } from "../i18n";
 
 interface MoveHistoryProps {
   history: HistoryEntry[];
 }
 
 export function MoveHistory({ history }: MoveHistoryProps) {
+  const { t } = useI18n();
   const listRef = useRef<HTMLDivElement>(null);
 
   // Автоскролл к последнему ходу.
@@ -32,10 +34,10 @@ export function MoveHistory({ history }: MoveHistoryProps) {
 
   return (
     <div className="history">
-      <div className="history__head">Ходы партии</div>
+      <div className="history__head">{t.history}</div>
       <div className="history__list" ref={listRef}>
         {rows.length === 0 && (
-          <div className="history__empty">Партия ещё не началась</div>
+          <div className="history__empty">{t.gameNotStarted}</div>
         )}
         {rows.map((row) => (
           <div className="history__row" key={row.no}>

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { Board, Color, PieceType } from "@/engine";
 import { pieceGlyph } from "../pieces";
+import { useI18n } from "../i18n";
 
 interface CapturedPiecesProps {
   board: Board;
@@ -10,25 +11,6 @@ interface CapturedPiecesProps {
 }
 
 const VALUE: Record<PieceType, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
-
-const PIECE_NAME: Record<Color, Record<PieceType, string>> = {
-  w: {
-    p: "Белая пешка",
-    n: "Белый конь",
-    b: "Белый слон",
-    r: "Белая ладья",
-    q: "Белый ферзь",
-    k: "Белый король",
-  },
-  b: {
-    p: "Чёрная пешка",
-    n: "Чёрный конь",
-    b: "Чёрный слон",
-    r: "Чёрная ладья",
-    q: "Чёрный ферзь",
-    k: "Чёрный король",
-  },
-};
 
 /** Считает, какие фигуры каждого цвета отсутствуют на доске относительно полного набора. */
 function capturedFromBoard(board: Board): {
@@ -56,6 +38,7 @@ function capturedFromBoard(board: Board): {
 }
 
 export function CapturedPieces({ board, side }: CapturedPiecesProps) {
+  const { pieceName } = useI18n();
   const { captured, advantage } = useMemo(() => {
     const { byWhite, byBlack } = capturedFromBoard(board);
     const list = side === "w" ? byWhite : byBlack; // фигуры, взятые этой стороной
@@ -80,8 +63,8 @@ export function CapturedPieces({ board, side }: CapturedPiecesProps) {
             <span
               key={i}
               className={`captured__piece captured__piece--${enemy}`}
-              title={PIECE_NAME[enemy][t]}
-              aria-label={PIECE_NAME[enemy][t]}
+              title={pieceName(enemy, t)}
+              aria-label={pieceName(enemy, t)}
             >
               {pieceGlyph(enemy, t)}
             </span>

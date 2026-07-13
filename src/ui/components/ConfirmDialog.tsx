@@ -13,6 +13,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
   return (
     <div className="overlay" role="presentation">
       <section
@@ -27,7 +28,7 @@ export function ConfirmDialog({
         <p className="confirm-dialog__text">{description}</p>
         <div className="confirm-dialog__actions">
           <button type="button" className="btn" onClick={onCancel}>
-            Отмена
+            {t.cancel}
           </button>
           <button
             type="button"
@@ -41,3 +42,4 @@ export function ConfirmDialog({
     </div>
   );
 }
+import { useI18n } from "../i18n";
