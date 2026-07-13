@@ -2,16 +2,7 @@
 
 import type { Color, PieceType } from "@/engine";
 
-const WHITE: Record<PieceType, string> = {
-  k: "♔",
-  q: "♕",
-  r: "♖",
-  b: "♗",
-  n: "♘",
-  p: "♙",
-};
-
-const BLACK: Record<PieceType, string> = {
+const FILLED: Record<PieceType, string> = {
   k: "♚",
   q: "♛",
   r: "♜",
@@ -20,6 +11,6 @@ const BLACK: Record<PieceType, string> = {
   p: "♟",
 };
 
-export function pieceGlyph(color: Color, type: PieceType): string {
-  return color === "w" ? WHITE[type] : BLACK[type];
+export function pieceGlyph(_color: Color, type: PieceType): string {
+  return FILLED[type];
 }

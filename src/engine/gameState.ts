@@ -49,11 +49,14 @@ export function gameStatus(
 /**
  * Ключ позиции для правила повторения. Включает расстановку, очередь хода,
  * права рокировки и целевой квадрат взятия на проходе. Не включает номера ходов.
- * Важно: ep-квадрат учитывается только тогда, когда взятие на проходе реально возможно.
- * Для простоты здесь учитываем поле ep всегда (это консервативно и соответствует FEN).
+ * Поле en passant учитывается только тогда, когда взятие на проходе реально легально.
  */
 export function positionKey(pos: Position): string {
-  const ep = pos.enPassant ?? "-";
+  const ep =
+    pos.enPassant !== null &&
+    generateLegalMoves(pos).some((move) => move.flag === "en-passant")
+      ? pos.enPassant
+      : "-";
   const c = pos.castling;
   const cr =
     (c.wK ? "K" : "") +

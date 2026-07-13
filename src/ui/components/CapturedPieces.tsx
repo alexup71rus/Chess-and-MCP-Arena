@@ -11,6 +11,25 @@ interface CapturedPiecesProps {
 
 const VALUE: Record<PieceType, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
+const PIECE_NAME: Record<Color, Record<PieceType, string>> = {
+  w: {
+    p: "Белая пешка",
+    n: "Белый конь",
+    b: "Белый слон",
+    r: "Белая ладья",
+    q: "Белый ферзь",
+    k: "Белый король",
+  },
+  b: {
+    p: "Чёрная пешка",
+    n: "Чёрный конь",
+    b: "Чёрный слон",
+    r: "Чёрная ладья",
+    q: "Чёрный ферзь",
+    k: "Чёрный король",
+  },
+};
+
 /** Считает, какие фигуры каждого цвета отсутствуют на доске относительно полного набора. */
 function capturedFromBoard(board: Board): {
   byWhite: PieceType[];
@@ -61,6 +80,8 @@ export function CapturedPieces({ board, side }: CapturedPiecesProps) {
             <span
               key={i}
               className={`captured__piece captured__piece--${enemy}`}
+              title={PIECE_NAME[enemy][t]}
+              aria-label={PIECE_NAME[enemy][t]}
             >
               {pieceGlyph(enemy, t)}
             </span>

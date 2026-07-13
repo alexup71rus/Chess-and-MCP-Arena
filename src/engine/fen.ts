@@ -10,7 +10,7 @@ import {
   type Square,
   STARTING_FEN,
 } from "./types";
-import { fromAlgebraic, makeSquare, toAlgebraic } from "./geometry";
+import { fromAlgebraic, makeSquare, rankOf, toAlgebraic } from "./geometry";
 
 const FEN_PIECE: Record<string, Piece> = {
   P: { type: "p", color: "w" },
@@ -44,8 +44,8 @@ export function emptyBoard(): Board {
  */
 export function parseFEN(fen: string): Position {
   const parts = fen.trim().split(/\s+/);
-  if (parts.length < 4) {
-    throw new Error(`Некорректный FEN (ожидалось ≥4 полей): ${fen}`);
+  if (parts.length !== 6) {
+    throw new Error(`Некорректный FEN (ожидалось 6 полей): ${fen}`);
   }
   const [
     boardPart,
@@ -86,6 +86,18 @@ export function parseFEN(fen: string): Position {
     }
   }
 
+  const whiteKings = board.filter(
+    (piece) => piece?.type === "k" && piece.color === "w",
+  ).length;
+  const blackKings = board.filter(
+    (piece) => piece?.type === "k" && piece.color === "b",
+  ).length;
+  if (whiteKings !== 1 || blackKings !== 1) {
+    throw new Error(
+      `Некорректный FEN (нужен ровно один король каждого цвета): ${fen}`,
+    );
+  }
+
   if (turnPart !== "w" && turnPart !== "b") {
     throw new Error(`Некорректный FEN (очередь хода): ${fen}`);
   }
@@ -113,13 +125,66 @@ export function parseFEN(fen: string): Position {
     }
   }
 
+  validateCastlingPieces(board, castling, fen);
+
   const enPassant: Square | null =
     epPart === "-" ? null : fromAlgebraic(epPart);
+  if (enPassant !== null) {
+    validateEnPassant(board, turn, enPassant, fen);
+  }
 
-  const halfmoveClock = halfmovePart ? Number(halfmovePart) : 0;
-  const fullmoveNumber = fullmovePart ? Number(fullmovePart) : 1;
+  if (!/^\d+$/.test(halfmovePart)) {
+    throw new Error(`Некорректный FEN (счётчик полуходов): ${fen}`);
+  }
+  if (!/^\d+$/.test(fullmovePart)) {
+    throw new Error(`Некорректный FEN (номер хода): ${fen}`);
+  }
+  const halfmoveClock = Number(halfmovePart);
+  const fullmoveNumber = Number(fullmovePart);
+  if (fullmoveNumber < 1) {
+    throw new Error(`Некорректный FEN (номер хода должен быть ≥ 1): ${fen}`);
+  }
 
   return { board, turn, castling, enPassant, halfmoveClock, fullmoveNumber };
+}
+
+function validateCastlingPieces(
+  board: Board,
+  castling: CastlingRights,
+  fen: string,
+): void {
+  const has = (square: Square, type: PieceType, color: Color) => {
+    const piece = board[square];
+    return piece?.type === type && piece.color === color;
+  };
+  const valid =
+    (!castling.wK || (has(4, "k", "w") && has(7, "r", "w"))) &&
+    (!castling.wQ || (has(4, "k", "w") && has(0, "r", "w"))) &&
+    (!castling.bK || (has(60, "k", "b") && has(63, "r", "b"))) &&
+    (!castling.bQ || (has(60, "k", "b") && has(56, "r", "b")));
+  if (!valid) {
+    throw new Error(`Некорректный FEN (права рокировки без фигур): ${fen}`);
+  }
+}
+
+function validateEnPassant(
+  board: Board,
+  turn: Color,
+  target: Square,
+  fen: string,
+): void {
+  const expectedRank = turn === "w" ? 5 : 2;
+  const pawnSquare = turn === "w" ? target - 8 : target + 8;
+  const pawn = board[pawnSquare];
+  const expectedColor: Color = turn === "w" ? "b" : "w";
+  if (
+    rankOf(target) !== expectedRank ||
+    board[target] !== null ||
+    pawn?.type !== "p" ||
+    pawn.color !== expectedColor
+  ) {
+    throw new Error(`Некорректный FEN (поле en passant): ${fen}`);
+  }
 }
 
 const PIECE_TO_FEN: Record<Color, Record<PieceType, string>> = {

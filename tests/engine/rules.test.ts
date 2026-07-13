@@ -114,6 +114,12 @@ describe("ничьи", () => {
     expect(status.kind).toBe("draw");
     if (status.kind === "draw") expect(status.reason).toBe("threefold");
   });
+
+  it("игнорирует en passant, если взятие невозможно", () => {
+    const withoutEp = pos("4k3/8/8/4p3/8/8/8/4K3 w - - 0 2");
+    const irrelevantEp = pos("4k3/8/8/4p3/8/8/8/4K3 w - e6 0 2");
+    expect(positionKey(irrelevantEp)).toBe(positionKey(withoutEp));
+  });
 });
 
 describe("генерация: счёт ходов в известных позициях", () => {

@@ -30,6 +30,9 @@ export function GameStatusView({ status, turn }: GameStatusViewProps) {
   } else if (status.kind === "checkmate") {
     text = `Мат! Победили ${COLOR_NAME[status.winner]}`;
     tone = "end";
+  } else if (status.kind === "resigned") {
+    text = `Сдача. Победили ${COLOR_NAME[status.winner]}`;
+    tone = "end";
   } else if (status.kind === "stalemate") {
     text = "Пат — ничья";
     tone = "end";
@@ -40,6 +43,7 @@ export function GameStatusView({ status, turn }: GameStatusViewProps) {
 
   return (
     <div className={`status status--${tone}`}>
+      <span className="status__marker" aria-hidden="true" />
       <span className="status__text">{text}</span>
     </div>
   );

@@ -58,6 +58,7 @@ export type DrawReason =
 export type GameStatus =
   | { kind: "ongoing"; check: boolean }
   | { kind: "checkmate"; winner: Color }
+  | { kind: "resigned"; winner: Color }
   | { kind: "stalemate" }
   | { kind: "draw"; reason: DrawReason };
 
