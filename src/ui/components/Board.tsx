@@ -1,7 +1,7 @@
 // Доска: сетка 8×8 с координатами, подсветкой и обработкой кликов.
 
-import { memo, useEffect, useRef, useState } from "react";
-import type { Piece as ChessPiece, Position, Square } from "@/engine";
+import { memo, useLayoutEffect, useRef } from "react";
+import type { Position, Square } from "@/engine";
 import { fileOf, rankOf } from "@/engine";
 import { Piece } from "./Piece";
 
@@ -35,25 +35,6 @@ const PIECE_NAME = {
   },
 } as const;
 
-interface MoveAnimation {
-  id: number;
-  from: Square;
-  to: Square;
-  piece: ChessPiece;
-  active: boolean;
-}
-
-const MOVE_ANIMATION_FALLBACK_MS = 800;
-
-function displayCoordinates(square: Square, flipped: boolean) {
-  const file = fileOf(square);
-  const rank = rankOf(square);
-  return {
-    file: flipped ? 7 - file : file,
-    rank: flipped ? rank : 7 - rank,
-  };
-}
-
 function BoardImpl({
   position,
   selected,
@@ -63,14 +44,13 @@ function BoardImpl({
   flipped,
   onSquareClick,
 }: BoardProps) {
-  const [moveAnimation, setMoveAnimation] = useState<MoveAnimation | null>(
-    null,
-  );
   const hasRendered = useRef(false);
   const previousMove = useRef(lastMove);
-  const animationId = useRef(0);
+  const squareRefs = useRef(new Map<Square, HTMLButtonElement>());
+  const pieceRefs = useRef(new Map<Square, HTMLSpanElement>());
+  const activeAnimation = useRef<Animation | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const previous = previousMove.current;
     previousMove.current = lastMove;
 
@@ -83,29 +63,34 @@ function BoardImpl({
       return;
     }
 
-    const piece = position.board[lastMove.to];
-    if (!piece) return;
+    const from = squareRefs.current.get(lastMove.from);
+    const to = pieceRefs.current.get(lastMove.to);
+    if (
+      !from ||
+      !to ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
 
-    const id = ++animationId.current;
-    setMoveAnimation({ ...lastMove, piece, id, active: false });
-    // Первый кадр фиксирует фигуру на исходной клетке, второй запускает CSS-переход.
-    // Без этой паузы браузер может объединить оба состояния в один кадр.
-    let activationFrame: number | null = null;
-    const frame = requestAnimationFrame(() => {
-      activationFrame = requestAnimationFrame(() => {
-        setMoveAnimation((current) =>
-          current?.id === id ? { ...current, active: true } : current,
-        );
-      });
-    });
-    const timeout = window.setTimeout(() => {
-      setMoveAnimation((current) => (current?.id === id ? null : current));
-    }, MOVE_ANIMATION_FALLBACK_MS);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      if (activationFrame !== null) cancelAnimationFrame(activationFrame);
-      window.clearTimeout(timeout);
+    activeAnimation.current?.cancel();
+    const fromRect = from.getBoundingClientRect();
+    const toRect = to.getBoundingClientRect();
+    const animation = to.animate(
+      [
+        {
+          transform: `translate(${fromRect.left - toRect.left}px, ${fromRect.top - toRect.top}px)`,
+        },
+        { transform: "translate(0, 0)" },
+      ],
+      {
+        duration: 260,
+        easing: "cubic-bezier(0.2, 0.82, 0.25, 1)",
+      },
+    );
+    activeAnimation.current = animation;
+    animation.onfinish = () => {
+      if (activeAnimation.current === animation) activeAnimation.current = null;
     };
   }, [lastMove, position.board]);
 
@@ -126,7 +111,6 @@ function BoardImpl({
           const isLastMove =
             lastMove !== null && (lastMove.from === sq || lastMove.to === sq);
           const isCheck = checkSquare === sq;
-          const isMovingTarget = moveAnimation?.to === sq;
           const squareName = FILES[f] + (r + 1);
           const pieceName = piece ? PIECE_NAME[piece.color][piece.type] : null;
           const showFileLabel = r === (flipped ? 7 : 0);
@@ -138,7 +122,6 @@ function BoardImpl({
             isSelected && "square--selected",
             isLastMove && "square--last-move",
             isCheck && "square--check",
-            isMovingTarget && "square--moving-target",
           ]
             .filter(Boolean)
             .join(" ");
@@ -149,6 +132,10 @@ function BoardImpl({
               type="button"
               className={classes}
               onClick={() => onSquareClick(sq)}
+              ref={(element) => {
+                if (element) squareRefs.current.set(sq, element);
+                else squareRefs.current.delete(sq);
+              }}
               aria-label={
                 pieceName ? `${squareName}, ${pieceName}` : squareName
               }
@@ -175,8 +162,16 @@ function BoardImpl({
                   {r + 1}
                 </span>
               )}
-              {piece && !isMovingTarget && (
-                <Piece color={piece.color} type={piece.type} />
+              {piece && (
+                <span
+                  className="square__piece"
+                  ref={(element) => {
+                    if (element) pieceRefs.current.set(sq, element);
+                    else pieceRefs.current.delete(sq);
+                  }}
+                >
+                  <Piece color={piece.color} type={piece.type} />
+                </span>
               )}
               {isTarget && !isCapture && <span className="square__hint" />}
               {isCapture && <span className="square__capture-ring" />}
@@ -184,51 +179,6 @@ function BoardImpl({
           );
         }),
       )}
-      {moveAnimation && (
-        <MovingPiece
-          animation={moveAnimation}
-          flipped={flipped}
-          onFinish={() =>
-            setMoveAnimation((current) =>
-              current?.id === moveAnimation.id ? null : current,
-            )
-          }
-        />
-      )}
-    </div>
-  );
-}
-
-function MovingPiece({
-  animation,
-  flipped,
-  onFinish,
-}: {
-  animation: MoveAnimation;
-  flipped: boolean;
-  onFinish: () => void;
-}) {
-  const from = displayCoordinates(animation.from, flipped);
-  const to = displayCoordinates(animation.to, flipped);
-  const style = {
-    left: `${to.file * 12.5}%`,
-    top: `${to.rank * 12.5}%`,
-    "--move-x": `${(from.file - to.file) * 100}%`,
-    "--move-y": `${(from.rank - to.rank) * 100}%`,
-  } as React.CSSProperties;
-
-  return (
-    <div
-      className={`board__move-piece ${
-        animation.active ? "board__move-piece--active" : ""
-      }`}
-      style={style}
-      onTransitionEnd={(event) => {
-        if (event.propertyName === "transform") onFinish();
-      }}
-      aria-hidden="true"
-    >
-      <Piece color={animation.piece.color} type={animation.piece.type} />
     </div>
   );
 }

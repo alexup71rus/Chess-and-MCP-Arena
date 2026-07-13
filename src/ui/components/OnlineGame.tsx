@@ -78,6 +78,18 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
         </p>
       </header>
 
+      <nav className="game-nav" aria-label="Управление партией">
+        <ControlsOnline
+          connected={state.connected}
+          isFlipped={state.flipped}
+          canRestart={terminal}
+          restarting={restarting}
+          onRestart={() => void restart()}
+          onFlip={online.flip}
+          onExit={exit}
+        />
+      </nav>
+
       <main className="app__main">
         <section className="app__game" aria-label="Шахматная партия">
           <PlayerRail
@@ -123,19 +135,6 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
           />
 
           <OnlineMoveHistory sans={snapshot.moveHistory} />
-
-          <div className="panel__actions">
-            <div className="panel__section-title">Действия</div>
-            <ControlsOnline
-              connected={state.connected}
-              isFlipped={state.flipped}
-              canRestart={terminal}
-              restarting={restarting}
-              onRestart={() => void restart()}
-              onFlip={online.flip}
-              onExit={exit}
-            />
-          </div>
         </aside>
       </main>
     </div>
@@ -266,7 +265,7 @@ function ControlsOnline({
   onExit: () => void;
 }) {
   return (
-    <div className="controls">
+    <>
       {canRestart && (
         <button
           type="button"
@@ -280,14 +279,14 @@ function ControlsOnline({
       <button type="button" className="btn" onClick={onFlip}>
         {isFlipped ? "↑ Перевернуть" : "↓ Перевернуть"}
       </button>
-      <button type="button" className="btn" onClick={onExit}>
-        ← Выйти в меню
+      <button type="button" className="btn btn--quiet" onClick={onExit}>
+        Выйти в меню
       </button>
       <span className="connection-dot" aria-live="polite">
         <span aria-hidden="true">{connected ? "●" : "●"}</span>
         {connected ? " Подключено" : " Нет связи"}
       </span>
-    </div>
+    </>
   );
 }
 

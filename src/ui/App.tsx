@@ -8,7 +8,6 @@ import { Board } from "./components/Board";
 import { GameStatusView } from "./components/GameStatusView";
 import { MoveHistory } from "./components/MoveHistory";
 import { CapturedPieces } from "./components/CapturedPieces";
-import { Controls } from "./components/Controls";
 import { PromotionDialog } from "./components/PromotionDialog";
 import { ModeSelect, type Mode } from "./components/ModeSelect";
 import { OnlineGame } from "./components/OnlineGame";
@@ -101,6 +100,34 @@ function LocalGame({ onExit }: { onExit: () => void }) {
         <p className="app__subtitle">Классическая партия — горячие места</p>
       </header>
 
+      <nav className="game-nav" aria-label="Управление партией">
+        <button
+          type="button"
+          className="btn btn--primary"
+          onClick={() => dispatch({ type: "new-game" })}
+        >
+          Новая партия
+        </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => dispatch({ type: "undo" })}
+          disabled={state.history.length === 0}
+        >
+          ← Отменить ход
+        </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => dispatch({ type: "flip" })}
+        >
+          {state.flipped ? "↑ Перевернуть" : "↓ Перевернуть"}
+        </button>
+        <button type="button" className="btn btn--quiet" onClick={onExit}>
+          Выйти в меню
+        </button>
+      </nav>
+
       <main className="app__main">
         <section className="app__game" aria-label="Шахматная партия">
           <PlayerRail
@@ -135,24 +162,7 @@ function LocalGame({ onExit }: { onExit: () => void }) {
 
         <aside className="app__panel">
           <GameStatusView status={state.status} turn={turn} />
-
           <MoveHistory history={state.history} />
-
-          <div className="panel__actions">
-            <div className="panel__section-title">Действия</div>
-            <Controls
-              canUndo={state.history.length > 0}
-              isFlipped={state.flipped}
-              onNewGame={() => dispatch({ type: "new-game" })}
-              onUndo={() => dispatch({ type: "undo" })}
-              onFlip={() => dispatch({ type: "flip" })}
-            />
-            <div className="controls">
-              <button type="button" className="btn" onClick={onExit}>
-                ← Выйти в меню
-              </button>
-            </div>
-          </div>
         </aside>
       </main>
     </div>
