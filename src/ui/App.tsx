@@ -12,10 +12,14 @@ import { Icon } from "./components/Icon";
 import { MoveHistory } from "./components/MoveHistory";
 import { PromotionDialog } from "./components/PromotionDialog";
 import { SoundToggle } from "./components/SoundToggle";
+import { GameSettings } from "./components/GameSettings";
+import { GameClocks } from "./components/GameClocks";
 import { ModeSelect, type Mode } from "./components/ModeSelect";
 import { OnlineGame } from "./components/OnlineGame";
 import { createGame } from "./hooks/useOnlineChessGame";
 import { useMoveSounds } from "./hooks/useMoveSounds";
+import { useChessClocks } from "./hooks/useChessClocks";
+import { useGamePreferences } from "./hooks/useGamePreferences";
 import { LanguageSwitcher, useI18n } from "./i18n";
 
 type View =
@@ -74,18 +78,39 @@ function LocalGame({ onExit }: { onExit: () => void }) {
   const [confirmAction, setConfirmAction] = useState<"new" | "exit" | null>(
     null,
   );
-  const [muted, setMuted] = useState(true);
+  const {
+    muted,
+    effectsMode,
+    showMoveHints,
+    showTimer,
+    setMuted,
+    setEffectsMode,
+    setShowMoveHints,
+    setShowTimer,
+  } = useGamePreferences();
   const { play, unlock } = useMoveSounds(!muted);
+  const {
+    seconds: clockSeconds,
+    paused: clocksPaused,
+    togglePause: toggleClocksPause,
+  } = useChessClocks(
+    state.position.turn,
+    showTimer && state.status.kind === "ongoing",
+    state.history.length === 0,
+  );
 
   const toggleSound = useCallback(() => {
     if (muted) unlock();
-    setMuted((value) => !value);
-  }, [muted, unlock]);
+    setMuted(!muted);
+  }, [muted, setMuted, unlock]);
 
   const onMovePlayed = useCallback(
     ({ capture, check }: MoveFeedback) =>
-      play(check ? "check" : capture ? "capture" : "move"),
-    [play],
+      play(
+        check ? "check" : capture ? "capture" : "move",
+        effectsMode === "overdrive",
+      ),
+    [effectsMode, play],
   );
 
   const handleSquareClick = useCallback(
@@ -119,12 +144,23 @@ function LocalGame({ onExit }: { onExit: () => void }) {
         <div className="header-controls">
           <LanguageSwitcher />
           <SoundToggle muted={muted} onToggle={toggleSound} />
+          <GameSettings
+            effectsMode={effectsMode}
+            showMoveHints={showMoveHints}
+            showTimer={showTimer}
+            onEffectsModeChange={setEffectsMode}
+            onShowMoveHintsChange={setShowMoveHints}
+            onShowTimerChange={setShowTimer}
+          />
         </div>
         <h1 className="app__title">{t.title}</h1>
         <p className="app__subtitle">{t.localSubtitle}</p>
       </header>
 
-      <main className="game-layout" aria-label={t.gameLabel}>
+      <main
+        className={`game-layout ${showTimer ? "game-layout--with-timer" : ""}`}
+        aria-label={t.gameLabel}
+      >
         <div className="game-layout__top-player">
           <PlayerRail
             color={topColor}
@@ -159,6 +195,8 @@ function LocalGame({ onExit }: { onExit: () => void }) {
             lastMove={state.lastMove}
             checkSquare={inCheckSquare}
             flipped={state.flipped}
+            effectsMode={effectsMode}
+            showMoveHints={showMoveHints}
             moveFeedback={
               state.history.length
                 ? {
@@ -182,6 +220,17 @@ function LocalGame({ onExit }: { onExit: () => void }) {
             />
           )}
         </div>
+
+        {showTimer && (
+          <div className="game-layout__timer game-layout__timer--mobile">
+            <GameClocks
+              activeColor={turn}
+              seconds={clockSeconds}
+              paused={clocksPaused}
+              onTogglePause={toggleClocksPause}
+            />
+          </div>
+        )}
 
         <div className="game-layout__bottom-player">
           <PlayerRail
@@ -215,6 +264,17 @@ function LocalGame({ onExit }: { onExit: () => void }) {
           <GameStatusView status={state.status} turn={turn} />
 
           <MoveHistory history={state.history} />
+
+          {showTimer && (
+            <div className="game-layout__timer game-layout__timer--desktop">
+              <GameClocks
+                activeColor={turn}
+                seconds={clockSeconds}
+                paused={clocksPaused}
+                onTogglePause={toggleClocksPause}
+              />
+            </div>
+          )}
         </aside>
       </main>
 

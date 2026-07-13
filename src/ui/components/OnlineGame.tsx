@@ -13,8 +13,10 @@ import { GameStatusView } from "./GameStatusView";
 import { Icon } from "./Icon";
 import { PromotionDialog } from "./PromotionDialog";
 import { SoundToggle } from "./SoundToggle";
+import { GameSettings } from "./GameSettings";
 import { LanguageSwitcher, useI18n } from "../i18n";
 import { useMoveSounds } from "../hooks/useMoveSounds";
+import { useGamePreferences } from "../hooks/useGamePreferences";
 
 interface OnlineGameProps {
   mode: OnlineMode;
@@ -29,18 +31,28 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
   const [confirmAction, setConfirmAction] = useState<"new" | "exit" | null>(
     null,
   );
-  const [muted, setMuted] = useState(true);
+  const {
+    muted,
+    effectsMode,
+    showMoveHints,
+    setMuted,
+    setEffectsMode,
+    setShowMoveHints,
+  } = useGamePreferences();
   const { play, unlock } = useMoveSounds(!muted);
 
   const toggleSound = useCallback(() => {
     if (muted) unlock();
-    setMuted((value) => !value);
-  }, [muted, unlock]);
+    setMuted(!muted);
+  }, [muted, setMuted, unlock]);
 
   const onMovePlayed = useCallback(
     ({ capture, check }: MoveFeedback) =>
-      play(check ? "check" : capture ? "capture" : "move"),
-    [play],
+      play(
+        check ? "check" : capture ? "capture" : "move",
+        effectsMode === "overdrive",
+      ),
+    [effectsMode, play],
   );
 
   useEffect(() => {
@@ -93,6 +105,12 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
         <div className="header-controls">
           <LanguageSwitcher />
           <SoundToggle muted={muted} onToggle={toggleSound} />
+          <GameSettings
+            effectsMode={effectsMode}
+            showMoveHints={showMoveHints}
+            onEffectsModeChange={setEffectsMode}
+            onShowMoveHintsChange={setShowMoveHints}
+          />
         </div>
         <h1 className="app__title">{t.title}</h1>
         <p className="app__subtitle">
@@ -138,6 +156,8 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
             lastMove={online.lastMoveSquares}
             checkSquare={online.inCheckSquare}
             flipped={state.flipped}
+            effectsMode={effectsMode}
+            showMoveHints={showMoveHints}
             moveFeedback={
               snapshot.lastMove
                 ? {

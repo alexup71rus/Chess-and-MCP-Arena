@@ -1,5 +1,11 @@
 type IconName =
-  "arrow-left" | "arrow-right" | "flip" | "undo" | "volume" | "volume-off";
+  | "arrow-left"
+  | "arrow-right"
+  | "flip"
+  | "undo"
+  | "volume"
+  | "volume-off"
+  | "settings";
 
 interface IconProps {
   name: IconName;
@@ -15,6 +21,9 @@ export function Icon({ name }: IconProps) {
       <path d="M5 10v4h3l4 3V7l-4 3H5Zm11.5-1.5a5 5 0 0 1 0 7m2.5-10a9 9 0 0 1 0 13" />
     ),
     "volume-off": <path d="M5 10v4h3l4 3V7l-4 3H5Zm11 1 4 4m0-4-4 4" />,
+    settings: (
+      <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Zm0-12.2v2m0 13.8v2m9-9h-2M5 12H3m15.36-6.36-1.42 1.42M7.06 16.94l-1.42 1.42m0-12.72 1.42 1.42m9.88 9.88 1.42 1.42" />
+    ),
   };
 
   return (

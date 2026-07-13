@@ -14,6 +14,14 @@ type Messages = {
   language: string;
   soundOn: string;
   soundOff: string;
+  settings: string;
+  effects: string;
+  noEffects: string;
+  classicEffects: string;
+  overdriveEffects: string;
+  showMoveHints: string;
+  showTimer: string;
+  gameTime: string;
   localeName: string;
   title: string;
   chooseMode: string;
@@ -79,6 +87,14 @@ const messages: Record<Locale, Messages> = {
     language: "Язык",
     soundOn: "Звук включён",
     soundOff: "Звук выключен",
+    settings: "Настройки",
+    effects: "Эффекты",
+    noEffects: "Без эффектов",
+    classicEffects: "Классика",
+    overdriveEffects: "Overdrive",
+    showMoveHints: "Показывать доступные ходы",
+    showTimer: "Показывать таймер",
+    gameTime: "Время партии",
     localeName: "Русский",
     title: "♛ Шахматы",
     chooseMode: "Выберите режим игры",
@@ -146,6 +162,14 @@ const messages: Record<Locale, Messages> = {
     language: "Language",
     soundOn: "Sound on",
     soundOff: "Sound off",
+    settings: "Settings",
+    effects: "Effects",
+    noEffects: "No effects",
+    classicEffects: "Classic",
+    overdriveEffects: "Overdrive",
+    showMoveHints: "Show legal moves",
+    showTimer: "Show timer",
+    gameTime: "Game time",
     localeName: "English",
     title: "♛ Chess",
     chooseMode: "Choose a game mode",
@@ -214,6 +238,14 @@ const messages: Record<Locale, Messages> = {
     language: "语言",
     soundOn: "声音已开启",
     soundOff: "声音已关闭",
+    settings: "设置",
+    effects: "效果",
+    noEffects: "无效果",
+    classicEffects: "经典",
+    overdriveEffects: "狂热",
+    showMoveHints: "显示可走位置",
+    showTimer: "显示计时器",
+    gameTime: "对局时间",
     localeName: "简体中文",
     title: "♛ 国际象棋",
     chooseMode: "选择对局模式",
