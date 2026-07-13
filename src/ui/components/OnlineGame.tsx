@@ -8,6 +8,7 @@ import {
 } from "../hooks/useOnlineChessGame";
 import { Board } from "./Board";
 import { CapturedPieces } from "./CapturedPieces";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { GameStatusView } from "./GameStatusView";
 import { PromotionDialog } from "./PromotionDialog";
 
@@ -22,6 +23,9 @@ const COLOR_NAME: Record<Color, string> = { w: "Белые", b: "Чёрные" }
 export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
   const online = useOnlineChessGame();
   const [restarting, setRestarting] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"new" | "exit" | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -68,7 +72,7 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
   const terminal = snapshot.status.kind !== "ongoing";
 
   return (
-    <div className="app">
+    <div className="app app--game">
       <header className="app__header">
         <h1 className="app__title">♛ Шахматы</h1>
         <p className="app__subtitle">
@@ -78,65 +82,95 @@ export function OnlineGame({ mode, humanColor, onExit }: OnlineGameProps) {
         </p>
       </header>
 
-      <nav className="game-nav" aria-label="Управление партией">
-        <ControlsOnline
-          connected={state.connected}
-          isFlipped={state.flipped}
-          canRestart={terminal}
-          restarting={restarting}
-          onRestart={() => void restart()}
-          onFlip={online.flip}
-          onExit={exit}
-        />
-      </nav>
-
-      <main className="app__main">
-        <section className="app__game" aria-label="Шахматная партия">
+      <main className="game-layout" aria-label="Шахматная партия">
+        <div className="game-layout__top-player">
           <PlayerRail
             color={topColor}
             snapshot={snapshot}
             board={state.position.board}
           />
-          <div className="app__board-wrap">
-            <Board
-              position={state.position}
-              selected={state.selected}
-              legalTargets={online.legalTargets}
-              lastMove={online.lastMoveSquares}
-              checkSquare={online.inCheckSquare}
-              flipped={state.flipped}
-              onSquareClick={online.onSquareClick}
+        </div>
+
+        <div className="game-layout__top-actions">
+          <button
+            type="button"
+            className="btn btn--primary game-layout__new-game"
+            onClick={() => setConfirmAction("new")}
+            disabled={!terminal || restarting}
+          >
+            {restarting ? "Создаём…" : "Новая партия"}
+          </button>
+          <button
+            type="button"
+            className="btn icon-btn"
+            aria-label="Выйти в главное меню"
+            onClick={() => setConfirmAction("exit")}
+          >
+            <span aria-hidden="true">⌂</span>
+          </button>
+        </div>
+
+        <div className="app__board-wrap game-layout__board">
+          <Board
+            position={state.position}
+            selected={state.selected}
+            legalTargets={online.legalTargets}
+            lastMove={online.lastMoveSquares}
+            checkSquare={online.inCheckSquare}
+            flipped={state.flipped}
+            onSquareClick={online.onSquareClick}
+          />
+          {state.pendingPromotion && (
+            <PromotionDialog
+              color={turn}
+              onSelect={online.onPromote}
+              onCancel={online.cancelPromotion}
             />
-            {state.pendingPromotion && (
-              <PromotionDialog
-                color={turn}
-                onSelect={online.onPromote}
-                onCancel={online.cancelPromotion}
-              />
-            )}
-          </div>
+          )}
+        </div>
+
+        <div className="game-layout__bottom-player">
           <PlayerRail
             color={bottomColor}
             snapshot={snapshot}
             board={state.position.board}
           />
-        </section>
+        </div>
 
-        <aside className="app__panel">
+        <aside className="game-sidebar">
+          <nav className="game-actions" aria-label="Управление партией">
+            <ControlsOnline isFlipped={state.flipped} onFlip={online.flip} />
+          </nav>
+
+          <AgentConnections snapshot={snapshot} connected={state.connected} />
+
           <GameStatusView status={snapshot.status} turn={turn} />
 
-          <OnlineStatusLine
-            snapshot={snapshot}
-            connected={state.connected}
-            interactable={online.canInteract}
-            humanColor={humanColor}
-            submitting={state.submitting}
-            error={state.error}
-          />
+          <OnlineNotice submitting={state.submitting} error={state.error} />
 
           <OnlineMoveHistory sans={snapshot.moveHistory} />
         </aside>
       </main>
+
+      {confirmAction && (
+        <ConfirmDialog
+          title={
+            confirmAction === "new" ? "Начать новую партию?" : "Выйти в меню?"
+          }
+          description={
+            confirmAction === "new"
+              ? "Текущая онлайн-партия будет заменена новой."
+              : "Текущая онлайн-партия будет закрыта для этого клиента."
+          }
+          confirmLabel={confirmAction === "new" ? "Начать заново" : "Выйти"}
+          onCancel={() => setConfirmAction(null)}
+          onConfirm={() => {
+            if (confirmAction === "new") void restart();
+            else exit();
+            setConfirmAction(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -151,12 +185,7 @@ function PlayerRail({
   board: Parameters<typeof CapturedPieces>[0]["board"];
 }) {
   const player = snapshot.players[color];
-  const detail =
-    player === "human"
-      ? "Человек"
-      : snapshot.agentConnected[color]
-        ? "Агент · подключён"
-        : "Агент · ожидается";
+  const detail = player === "human" ? "Человек" : "Агент";
   return (
     <div
       className={`game-side ${
@@ -171,45 +200,61 @@ function PlayerRail({
   );
 }
 
-function OnlineStatusLine({
+function AgentConnections({
   snapshot,
   connected,
-  interactable,
-  humanColor,
-  submitting,
-  error,
 }: {
   snapshot: GameSnapshot;
   connected: boolean;
-  interactable: boolean;
-  humanColor: Color | null;
+}) {
+  const agentColors = (["w", "b"] as Color[]).filter(
+    (color) => snapshot.players[color] === "agent",
+  );
+
+  return (
+    <div className="agent-connections" aria-label="Подключения агентов">
+      {agentColors.map((color) => {
+        const isConnected = connected && snapshot.agentConnected[color];
+        const tone = !connected
+          ? "offline"
+          : isConnected
+            ? "connected"
+            : "waiting";
+        const status = !connected
+          ? "Нет связи"
+          : isConnected
+            ? "Подключён"
+            : "Ожидается";
+        return (
+          <div
+            className={`agent-connection agent-connection--${tone}`}
+            key={color}
+          >
+            <span className="agent-connection__side">
+              Агент · {COLOR_NAME[color]}
+            </span>
+            <span className="agent-connection__status">
+              <span className="agent-connection__dot" aria-hidden="true" />
+              {status}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function OnlineNotice({
+  submitting,
+  error,
+}: {
   submitting: boolean;
   error: string | null;
 }) {
-  let text: string;
-  if (error) {
-    text = `⚠ ${error}`;
-  } else if (!connected) {
-    text = "Подключение к партии…";
-  } else if (submitting) {
-    text = "Отправка хода…";
-  } else if (snapshot.status.kind !== "ongoing") {
-    text = "Партия завершена";
-  } else if (interactable) {
-    text = "Твой ход";
-  } else if (
-    snapshot.players[snapshot.turn] === "agent" &&
-    !snapshot.agentConnected[snapshot.turn]
-  ) {
-    text = `Ожидаем агента за ${COLOR_NAME[snapshot.turn]}`;
-  } else if (humanColor === null) {
-    text = `👁 Наблюдение · ход за ${COLOR_NAME[snapshot.turn]}`;
-  } else {
-    text = `Ход за ${COLOR_NAME[snapshot.turn]} — ждём…`;
-  }
+  if (!error && !submitting) return null;
   return (
-    <div className={`status status--${error ? "check" : "play"}`}>
-      <span className="status__text">{text}</span>
+    <div className={`game-notice ${error ? "game-notice--error" : ""}`}>
+      {error ? `⚠ ${error}` : "Отправка хода…"}
     </div>
   );
 }
@@ -248,45 +293,21 @@ function OnlineMoveHistory({ sans }: { sans: string[] }) {
 }
 
 function ControlsOnline({
-  connected,
   isFlipped,
-  canRestart,
-  restarting,
-  onRestart,
   onFlip,
-  onExit,
 }: {
-  connected: boolean;
   isFlipped: boolean;
-  canRestart: boolean;
-  restarting: boolean;
-  onRestart: () => void;
   onFlip: () => void;
-  onExit: () => void;
 }) {
   return (
-    <>
-      {canRestart && (
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={onRestart}
-          disabled={restarting}
-        >
-          {restarting ? "Создаём…" : "Новая партия"}
-        </button>
-      )}
-      <button type="button" className="btn" onClick={onFlip}>
-        {isFlipped ? "↑ Перевернуть" : "↓ Перевернуть"}
-      </button>
-      <button type="button" className="btn btn--quiet" onClick={onExit}>
-        Выйти в меню
-      </button>
-      <span className="connection-dot" aria-live="polite">
-        <span aria-hidden="true">{connected ? "●" : "●"}</span>
-        {connected ? " Подключено" : " Нет связи"}
-      </span>
-    </>
+    <button
+      type="button"
+      className="btn game-actions__wide"
+      aria-label={isFlipped ? "Вернуть обычный вид доски" : "Перевернуть доску"}
+      onClick={onFlip}
+    >
+      ⇅ Доска
+    </button>
   );
 }
 

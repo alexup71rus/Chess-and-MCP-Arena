@@ -5,9 +5,10 @@ import { useCallback, useState } from "react";
 import type { Color, PieceType, Square } from "@/engine";
 import { useChessGame } from "./hooks/useChessGame";
 import { Board } from "./components/Board";
+import { CapturedPieces } from "./components/CapturedPieces";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { GameStatusView } from "./components/GameStatusView";
 import { MoveHistory } from "./components/MoveHistory";
-import { CapturedPieces } from "./components/CapturedPieces";
 import { PromotionDialog } from "./components/PromotionDialog";
 import { ModeSelect, type Mode } from "./components/ModeSelect";
 import { OnlineGame } from "./components/OnlineGame";
@@ -67,6 +68,9 @@ export default function App() {
 /** Локальная hot-seat игра (как до интеграции с MCP), плюс кнопка выхода в меню. */
 function LocalGame({ onExit }: { onExit: () => void }) {
   const { state, dispatch, inCheckSquare, legalTargets } = useChessGame();
+  const [confirmAction, setConfirmAction] = useState<"new" | "exit" | null>(
+    null,
+  );
 
   const handleSquareClick = useCallback(
     (square: Square) => {
@@ -94,77 +98,110 @@ function LocalGame({ onExit }: { onExit: () => void }) {
   const bottomColor: Color = topColor === "w" ? "b" : "w";
 
   return (
-    <div className="app">
+    <div className="app app--game">
       <header className="app__header">
         <h1 className="app__title">♛ Шахматы</h1>
         <p className="app__subtitle">Классическая партия — горячие места</p>
       </header>
 
-      <nav className="game-nav" aria-label="Управление партией">
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={() => dispatch({ type: "new-game" })}
-        >
-          Новая партия
-        </button>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => dispatch({ type: "undo" })}
-          disabled={state.history.length === 0}
-        >
-          ← Отменить ход
-        </button>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => dispatch({ type: "flip" })}
-        >
-          {state.flipped ? "↑ Перевернуть" : "↓ Перевернуть"}
-        </button>
-        <button type="button" className="btn btn--quiet" onClick={onExit}>
-          Выйти в меню
-        </button>
-      </nav>
-
-      <main className="app__main">
-        <section className="app__game" aria-label="Шахматная партия">
+      <main className="game-layout" aria-label="Шахматная партия">
+        <div className="game-layout__top-player">
           <PlayerRail
             color={topColor}
             active={topColor === turn}
             board={state.position.board}
           />
-          <div className="app__board-wrap">
-            <Board
-              position={state.position}
-              selected={state.selected}
-              legalTargets={legalTargets}
-              lastMove={state.lastMove}
-              checkSquare={inCheckSquare}
-              flipped={state.flipped}
-              onSquareClick={handleSquareClick}
+        </div>
+
+        <div className="game-layout__top-actions">
+          <button
+            type="button"
+            className="btn btn--primary game-layout__new-game"
+            onClick={() => setConfirmAction("new")}
+          >
+            Новая партия
+          </button>
+          <button
+            type="button"
+            className="btn icon-btn"
+            aria-label="Выйти в главное меню"
+            onClick={() => setConfirmAction("exit")}
+          >
+            <span aria-hidden="true">⌂</span>
+          </button>
+        </div>
+
+        <div className="app__board-wrap game-layout__board">
+          <Board
+            position={state.position}
+            selected={state.selected}
+            legalTargets={legalTargets}
+            lastMove={state.lastMove}
+            checkSquare={inCheckSquare}
+            flipped={state.flipped}
+            onSquareClick={handleSquareClick}
+          />
+          {state.pendingPromotion && (
+            <PromotionDialog
+              color={turn}
+              onSelect={handlePromote}
+              onCancel={handleCancelPromotion}
             />
-            {state.pendingPromotion && (
-              <PromotionDialog
-                color={turn}
-                onSelect={handlePromote}
-                onCancel={handleCancelPromotion}
-              />
-            )}
-          </div>
+          )}
+        </div>
+
+        <div className="game-layout__bottom-player">
           <PlayerRail
             color={bottomColor}
             active={bottomColor === turn}
             board={state.position.board}
           />
-        </section>
+        </div>
 
-        <aside className="app__panel">
+        <aside className="game-sidebar">
+          <nav className="game-actions" aria-label="Управление партией">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => dispatch({ type: "flip" })}
+            >
+              ⇅ Доска
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => dispatch({ type: "undo" })}
+              disabled={state.history.length === 0}
+            >
+              ↶ Отменить ход
+            </button>
+          </nav>
+
           <GameStatusView status={state.status} turn={turn} />
+
           <MoveHistory history={state.history} />
         </aside>
       </main>
+
+      {confirmAction && (
+        <ConfirmDialog
+          title={
+            confirmAction === "new" ? "Начать новую партию?" : "Выйти в меню?"
+          }
+          description={
+            confirmAction === "new"
+              ? "Текущий прогресс партии будет сброшен."
+              : "Текущая партия будет закрыта."
+          }
+          confirmLabel={confirmAction === "new" ? "Начать заново" : "Выйти"}
+          onCancel={() => setConfirmAction(null)}
+          onConfirm={() => {
+            if (confirmAction === "new") dispatch({ type: "new-game" });
+            else onExit();
+            setConfirmAction(null);
+          }}
+        />
+      )}
     </div>
   );
 }
