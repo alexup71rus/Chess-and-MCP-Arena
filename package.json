@@ -1,8 +1,21 @@
 {
-  "name": "chess",
+  "name": "chess-and-mcp-arena",
   "version": "1.0.0",
-  "description": "Классические шахматы со всеми правилами. React UI + чистый движок на TS + MCP-сервер для игры с агентами.",
+  "description": "Chess! and MCP Arena — локальные шахматы для людей и MCP-агентов.",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/alexup71rus/Chess-and-MCP-Arena.git"
+  },
+  "homepage": "https://github.com/alexup71rus/Chess-and-MCP-Arena#readme",
+  "keywords": [
+    "chess",
+    "mcp",
+    "model-context-protocol",
+    "react",
+    "typescript"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

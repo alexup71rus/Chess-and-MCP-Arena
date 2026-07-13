@@ -602,12 +602,6 @@ body {
 
 /* ===== Кнопки ===== */
 
-.controls {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 0;
-}
 .btn {
   min-height: 40px;
   padding: 10px 12px;
@@ -661,25 +655,8 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.34),
     0 6px 16px rgba(167, 111, 10, 0.2);
 }
-.controls .btn--primary {
-  grid-column: 1 / -1;
-}
 .btn--wide {
   grid-column: 1 / -1;
-}
-
-.controls .connection-dot {
-  grid-column: 1 / -1;
-  justify-self: center;
-  margin: 2px 0 0;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 0.76rem;
-  color: var(--text-dim);
-}
-.connection-dot span {
-  color: #63c77b;
 }
 .btn--primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #f7ca55, #df9e20);
@@ -879,11 +856,7 @@ body {
     min-height: 220px;
     gap: 10px;
   }
-  .controls {
-    grid-template-columns: 1fr;
-  }
-  .btn--wide,
-  .controls .connection-dot {
+  .btn--wide {
     grid-column: auto;
   }
   .game-sidebar .history {
@@ -1048,12 +1021,4 @@ body {
   color: var(--danger);
   font-size: 0.9rem;
   margin: 12px 0 0;
-}
-
-/* ===== Онлайн-индикаторы ===== */
-.connection-dot {
-  display: inline-block;
-  margin-top: 5px;
-  color: var(--text-faint);
-  font-size: 0.76rem;
 }
