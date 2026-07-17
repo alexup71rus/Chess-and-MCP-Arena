@@ -1,20 +1,35 @@
 import { useState } from "react";
 import { LanguageSwitcher, useI18n } from "../i18n";
 
-export type Mode = "local" | "human-vs-agent" | "agent-vs-agent";
+export type Mode =
+  "local" | "human-vs-algorithm" | "human-vs-agent" | "agent-vs-agent";
+export type AlgorithmDifficulty = "easy" | "medium" | "hard";
 
 interface ModeSelectProps {
-  onSelect: (mode: Mode, detail: { humanColor?: "w" | "b" }) => Promise<void>;
+  onSelect: (
+    mode: Mode,
+    detail: {
+      humanColor?: "w" | "b";
+      algorithmDifficulty?: AlgorithmDifficulty;
+    },
+  ) => Promise<void>;
 }
 
 export function ModeSelect({ onSelect }: ModeSelectProps) {
   const { t, colorName } = useI18n();
   const [mode, setMode] = useState<Mode | null>(null);
   const [humanColor, setHumanColor] = useState<"w" | "b">("w");
+  const [algorithmDifficulty, setAlgorithmDifficulty] =
+    useState<AlgorithmDifficulty>("easy");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function start(detail: { humanColor?: "w" | "b" } = {}) {
+  async function start(
+    detail: {
+      humanColor?: "w" | "b";
+      algorithmDifficulty?: AlgorithmDifficulty;
+    } = {},
+  ) {
     if (!mode || busy) return;
     setBusy(true);
     setError(null);
@@ -43,6 +58,13 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
               title={t.localMode}
               description={t.localDescription}
               onClick={() => setMode("local")}
+            />
+            <ModeCard
+              active={mode === "human-vs-algorithm"}
+              icon="🧑‍🦱🆚♟️"
+              title={t.humanVsAlgorithm}
+              description={t.humanVsAlgorithmDescription}
+              onClick={() => setMode("human-vs-algorithm")}
             />
             <ModeCard
               active={mode === "human-vs-agent"}
@@ -105,6 +127,71 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
                 {busy ? t.creating : t.startMatch}
               </button>
               <p className="modeselect__hint">{t.humanHint}</p>
+            </div>
+          )}
+
+          {mode === "human-vs-algorithm" && (
+            <div className="modeselect__panel">
+              <div className="modeselect__row">
+                <span className="modeselect__label">{t.yourColor}</span>
+                <label className="modeselect__radio">
+                  <input
+                    type="radio"
+                    name="human-color"
+                    checked={humanColor === "w"}
+                    onChange={() => setHumanColor("w")}
+                  />{" "}
+                  {colorName("w")}
+                </label>
+                <label className="modeselect__radio">
+                  <input
+                    type="radio"
+                    name="human-color"
+                    checked={humanColor === "b"}
+                    onChange={() => setHumanColor("b")}
+                  />{" "}
+                  {colorName("b")}
+                </label>
+              </div>
+              <div className="modeselect__row">
+                <span className="modeselect__label">{t.difficulty}</span>
+                <label className="modeselect__radio">
+                  <input
+                    type="radio"
+                    name="algorithm-difficulty"
+                    checked={algorithmDifficulty === "easy"}
+                    onChange={() => setAlgorithmDifficulty("easy")}
+                  />{" "}
+                  {t.difficultyEasy}
+                </label>
+                <label className="modeselect__radio">
+                  <input
+                    type="radio"
+                    name="algorithm-difficulty"
+                    checked={algorithmDifficulty === "medium"}
+                    onChange={() => setAlgorithmDifficulty("medium")}
+                  />{" "}
+                  {t.difficultyMedium}
+                </label>
+                <label className="modeselect__radio">
+                  <input
+                    type="radio"
+                    name="algorithm-difficulty"
+                    checked={algorithmDifficulty === "hard"}
+                    onChange={() => setAlgorithmDifficulty("hard")}
+                  />{" "}
+                  {t.difficultyHard}
+                </label>
+              </div>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => void start({ humanColor, algorithmDifficulty })}
+                disabled={busy}
+              >
+                {t.startAlgorithmMatch}
+              </button>
+              <p className="modeselect__hint">{t.algorithmHint}</p>
             </div>
           )}
 

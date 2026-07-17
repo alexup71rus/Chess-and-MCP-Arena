@@ -15,6 +15,7 @@ import {
 import {
   findKing,
   gameStatus,
+  generateLegalMoves,
   generateLegalMovesFrom,
   isSquareAttacked,
   makeMove,
@@ -50,7 +51,9 @@ type Action =
   | { type: "attempt-move"; to: Square }
   | { type: "promote"; piece: PieceType }
   | { type: "cancel-promotion" }
+  | { type: "play-move"; move: Move }
   | { type: "undo" }
+  | { type: "undo-plies"; count: number }
   | { type: "new-game"; fen?: string }
   | { type: "flip" };
 
@@ -131,30 +134,23 @@ function reducer(state: ChessGameState, action: Action): ChessGameState {
     case "cancel-promotion":
       return { ...state, pendingPromotion: null };
 
-    case "undo": {
-      if (state.history.length === 0) return state;
-      const last = state.history[state.history.length - 1];
-      const position = last.position;
-      const history = state.history.slice(0, -1);
-      const positionKeys = state.positionKeys.slice(0, -1);
-      return {
-        ...state,
-        position,
-        history,
-        positionKeys,
-        selected: null,
-        legalFromSelected: [],
-        pendingPromotion: null,
-        lastMove:
-          history.length > 0
-            ? {
-                from: history[history.length - 1].move.from,
-                to: history[history.length - 1].move.to,
-              }
-            : null,
-        status: gameStatus(position, positionKeys),
-      };
+    case "play-move": {
+      if (state.status.kind !== "ongoing") return state;
+      const move = generateLegalMoves(state.position).find(
+        (candidate) =>
+          candidate.from === action.move.from &&
+          candidate.to === action.move.to &&
+          candidate.promotion === action.move.promotion,
+      );
+      return move ? applyMove(state, move) : state;
     }
+
+    case "undo": {
+      return undoPlies(state, 1);
+    }
+
+    case "undo-plies":
+      return undoPlies(state, action.count);
 
     case "new-game":
       return init(action.fen);
@@ -165,6 +161,36 @@ function reducer(state: ChessGameState, action: Action): ChessGameState {
     default:
       return state;
   }
+}
+
+function undoPlies(state: ChessGameState, count: number): ChessGameState {
+  const plies = Math.min(state.history.length, Math.max(1, Math.floor(count)));
+  if (plies === 0) return state;
+
+  const history = state.history.slice(0, -plies);
+  const positionKeys = state.positionKeys.slice(0, -plies);
+  const position =
+    history.length > 0
+      ? history[history.length - 1].nextPosition
+      : state.history[0].position;
+
+  return {
+    ...state,
+    position,
+    history,
+    positionKeys,
+    selected: null,
+    legalFromSelected: [],
+    pendingPromotion: null,
+    lastMove:
+      history.length > 0
+        ? {
+            from: history[history.length - 1].move.from,
+            to: history[history.length - 1].move.to,
+          }
+        : null,
+    status: gameStatus(position, positionKeys),
+  };
 }
 
 // Применяет ход и возвращает обновлённое состояние (без pendingPromotion).

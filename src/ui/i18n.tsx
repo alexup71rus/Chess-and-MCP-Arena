@@ -28,17 +28,25 @@ type Messages = {
   localSubtitle: string;
   localMode: string;
   localDescription: string;
+  humanVsAlgorithm: string;
+  humanVsAlgorithmDescription: string;
   humanVsAgent: string;
   humanVsAgentDescription: string;
   agentVsAgent: string;
   agentVsAgentDescription: string;
   spectating: string;
   yourColor: string;
+  difficulty: string;
+  difficultyEasy: string;
+  difficultyMedium: string;
+  difficultyHard: string;
   startLocal: string;
+  startAlgorithmMatch: string;
   startMatch: string;
   startAgentMatch: string;
   creating: string;
   humanHint: string;
+  algorithmHint: string;
   agentHint: string;
   newGame: string;
   exitToMenu: string;
@@ -49,7 +57,9 @@ type Messages = {
   resetBoard: string;
   undo: string;
   playerHuman: string;
+  playerAlgorithm: string;
   playerAgent: string;
+  algorithmThinking: string;
   noConnection: string;
   connected: string;
   waiting: string;
@@ -101,6 +111,9 @@ const messages: Record<Locale, Messages> = {
     localSubtitle: "Классическая партия — горячие места",
     localMode: "Локально",
     localDescription: "Два человека за одним экраном. Без сервера и агентов.",
+    humanVsAlgorithm: "Человек против алгоритма",
+    humanVsAlgorithmDescription:
+      "Локальный шахматный бот без нейросетей и MCP.",
     humanVsAgent: "Человек против агента",
     humanVsAgentDescription:
       "Ты ходишь на доске, агент подключается через MCP.",
@@ -108,12 +121,19 @@ const messages: Record<Locale, Messages> = {
     agentVsAgentDescription: "Два MCP-агента играют, ты наблюдаешь.",
     spectating: "наблюдение",
     yourColor: "Твой цвет:",
+    difficulty: "Сложность:",
+    difficultyEasy: "Лёгкая (1 полуход)",
+    difficultyMedium: "Средняя (3 полухода)",
+    difficultyHard: "Сложная (до 5 полуходов)",
     startLocal: "Начать локальную партию",
+    startAlgorithmMatch: "Играть с алгоритмом",
     startMatch: "Начать матч",
     startAgentMatch: "Начать матч для агентов",
     creating: "Создаём…",
     humanHint:
       "После старта попроси агента вызвать join_game. Свободная сторона определится автоматически.",
+    algorithmHint:
+      "Алгоритм работает в браузере: negamax с alpha-beta отсечениями, без нейросетей.",
     agentHint:
       "Первый агент вызывает join_game с выбранным цветом, второй получает оставшуюся сторону.",
     newGame: "Новая партия",
@@ -125,7 +145,9 @@ const messages: Record<Locale, Messages> = {
     resetBoard: "Вернуть обычный вид доски",
     undo: "Отменить ход",
     playerHuman: "Человек",
+    playerAlgorithm: "Алгоритм",
     playerAgent: "Агент",
+    algorithmThinking: "Алгоритм выбирает ход…",
     noConnection: "Нет связи",
     connected: "Подключён",
     waiting: "Ожидается",
@@ -176,6 +198,9 @@ const messages: Record<Locale, Messages> = {
     localSubtitle: "Classic game — hot seat",
     localMode: "Local game",
     localDescription: "Two people on one screen. No server or agents needed.",
+    humanVsAlgorithm: "Human vs algorithm",
+    humanVsAlgorithmDescription:
+      "A local chess bot without neural networks or MCP.",
     humanVsAgent: "Human vs agent",
     humanVsAgentDescription:
       "You move on the board; the agent connects through MCP.",
@@ -183,12 +208,19 @@ const messages: Record<Locale, Messages> = {
     agentVsAgentDescription: "Two MCP agents play while you watch.",
     spectating: "spectating",
     yourColor: "Your color:",
+    difficulty: "Difficulty:",
+    difficultyEasy: "Easy (1 ply)",
+    difficultyMedium: "Medium (3 plies)",
+    difficultyHard: "Hard (up to 5 plies)",
     startLocal: "Start local game",
+    startAlgorithmMatch: "Play the algorithm",
     startMatch: "Start match",
     startAgentMatch: "Start agent match",
     creating: "Creating…",
     humanHint:
       "After starting, ask the agent to call join_game. The open side is assigned automatically.",
+    algorithmHint:
+      "The browser runs negamax with alpha-beta pruning; no neural network is used.",
     agentHint:
       "The first agent calls join_game with a color; the second receives the other side.",
     newGame: "New game",
@@ -200,7 +232,9 @@ const messages: Record<Locale, Messages> = {
     resetBoard: "Restore normal board orientation",
     undo: "Undo move",
     playerHuman: "Human",
+    playerAlgorithm: "Algorithm",
     playerAgent: "Agent",
+    algorithmThinking: "Algorithm is choosing a move…",
     noConnection: "Offline",
     connected: "Connected",
     waiting: "Waiting",
@@ -252,17 +286,26 @@ const messages: Record<Locale, Messages> = {
     localSubtitle: "经典对局 — 本地双人",
     localMode: "本地对局",
     localDescription: "两人在同一屏幕对弈，无需服务器或智能体。",
+    humanVsAlgorithm: "人类对算法",
+    humanVsAlgorithmDescription: "本地国际象棋算法，无需神经网络或 MCP。",
     humanVsAgent: "人类对智能体",
     humanVsAgentDescription: "你在棋盘上走棋，智能体通过 MCP 连接。",
     agentVsAgent: "智能体对智能体",
     agentVsAgentDescription: "两个 MCP 智能体对弈，你可以观战。",
     spectating: "观战",
     yourColor: "你的执棋颜色：",
+    difficulty: "难度：",
+    difficultyEasy: "简单（1 个半回合）",
+    difficultyMedium: "中等（3 个半回合）",
+    difficultyHard: "困难（最多 5 个半回合）",
     startLocal: "开始本地对局",
+    startAlgorithmMatch: "与算法对弈",
     startMatch: "开始对局",
     startAgentMatch: "开始智能体对局",
     creating: "正在创建…",
     humanHint: "开始后请让智能体调用 join_game，空闲方会自动分配。",
+    algorithmHint:
+      "算法在浏览器中运行：采用 negamax 和 alpha-beta 剪枝，不使用神经网络。",
     agentHint: "第一个智能体使用指定颜色调用 join_game，第二个获得另一方。",
     newGame: "新对局",
     exitToMenu: "返回主菜单",
@@ -273,7 +316,9 @@ const messages: Record<Locale, Messages> = {
     resetBoard: "恢复棋盘默认方向",
     undo: "悔棋",
     playerHuman: "人类",
+    playerAlgorithm: "算法",
     playerAgent: "智能体",
+    algorithmThinking: "算法正在选择走法…",
     noConnection: "未连接",
     connected: "已连接",
     waiting: "等待中",

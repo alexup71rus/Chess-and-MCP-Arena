@@ -1,8 +1,13 @@
 // Корневой компонент: экран выбора режима → локальная игра (hot-seat) или
 // онлайн-игра через MCP (:5173/mcp) с real-time доской (SSE /events).
 
-import { useCallback, useState } from "react";
-import type { Color, PieceType, Square } from "@/engine";
+import { useCallback, useEffect, useState } from "react";
+import {
+  chooseAlgorithmMove,
+  type Color,
+  type PieceType,
+  type Square,
+} from "@/engine";
 import { useChessGame } from "./hooks/useChessGame";
 import { Board, type MoveFeedback } from "./components/Board";
 import { CapturedPieces } from "./components/CapturedPieces";
@@ -14,7 +19,11 @@ import { PromotionDialog } from "./components/PromotionDialog";
 import { SoundToggle } from "./components/SoundToggle";
 import { GameSettings } from "./components/GameSettings";
 import { GameClocks } from "./components/GameClocks";
-import { ModeSelect, type Mode } from "./components/ModeSelect";
+import {
+  ModeSelect,
+  type AlgorithmDifficulty,
+  type Mode,
+} from "./components/ModeSelect";
 import { OnlineGame } from "./components/OnlineGame";
 import { createGame } from "./hooks/useOnlineChessGame";
 import { useMoveSounds } from "./hooks/useMoveSounds";
@@ -26,6 +35,11 @@ type View =
   | { kind: "menu" }
   | { kind: "local" }
   | {
+      kind: "algorithm";
+      humanColor: Color;
+      difficulty: AlgorithmDifficulty;
+    }
+  | {
       kind: "online";
       mode: "human-vs-agent" | "agent-vs-agent";
       humanColor: Color | null;
@@ -35,9 +49,23 @@ export default function App() {
   const [view, setView] = useState<View>({ kind: "menu" });
 
   const onSelect = useCallback(
-    async (mode: Mode, detail: { humanColor?: "w" | "b" }) => {
+    async (
+      mode: Mode,
+      detail: {
+        humanColor?: "w" | "b";
+        algorithmDifficulty?: AlgorithmDifficulty;
+      },
+    ) => {
       if (mode === "local") {
         setView({ kind: "local" });
+        return;
+      }
+      if (mode === "human-vs-algorithm") {
+        setView({
+          kind: "algorithm",
+          humanColor: detail.humanColor === "b" ? "b" : "w",
+          difficulty: detail.algorithmDifficulty ?? "easy",
+        });
         return;
       }
       const humanColor: Color | null =
@@ -68,13 +96,39 @@ export default function App() {
       />
     );
   }
-  return <LocalGame onExit={() => setView({ kind: "menu" })} />;
+  return (
+    <LocalGame
+      humanColor={view.kind === "algorithm" ? view.humanColor : null}
+      algorithmDepth={
+        view.kind === "algorithm" ? difficultyDepth(view.difficulty) : null
+      }
+      onExit={() => setView({ kind: "menu" })}
+    />
+  );
+}
+
+function difficultyDepth(difficulty: AlgorithmDifficulty): number {
+  return difficulty === "easy" ? 1 : difficulty === "medium" ? 3 : 5;
 }
 
 /** Локальная hot-seat игра (как до интеграции с MCP), плюс кнопка выхода в меню. */
-function LocalGame({ onExit }: { onExit: () => void }) {
+function LocalGame({
+  onExit,
+  humanColor,
+  algorithmDepth,
+}: {
+  onExit: () => void;
+  humanColor: Color | null;
+  algorithmDepth: number | null;
+}) {
   const { t } = useI18n();
   const { state, dispatch, inCheckSquare, legalTargets } = useChessGame();
+  const algorithmColor: Color | null = humanColor
+    ? humanColor === "w"
+      ? "b"
+      : "w"
+    : null;
+  const [thinking, setThinking] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"new" | "exit" | null>(
     null,
   );
@@ -99,6 +153,29 @@ function LocalGame({ onExit }: { onExit: () => void }) {
     state.history.length === 0,
   );
 
+  useEffect(() => {
+    if (
+      !algorithmColor ||
+      state.status.kind !== "ongoing" ||
+      state.position.turn !== algorithmColor
+    ) {
+      setThinking(false);
+      return;
+    }
+
+    setThinking(true);
+    const timer = window.setTimeout(() => {
+      const move = chooseAlgorithmMove(state.position, {
+        depth: algorithmDepth ?? undefined,
+        timeLimitMs: algorithmDepth === 5 ? 1_000 : undefined,
+      });
+      if (move) dispatch({ type: "play-move", move });
+      setThinking(false);
+    }, 280);
+
+    return () => window.clearTimeout(timer);
+  }, [algorithmColor, algorithmDepth, dispatch, state.position, state.status]);
+
   const toggleSound = useCallback(() => {
     if (muted) unlock();
     setMuted(!muted);
@@ -115,13 +192,26 @@ function LocalGame({ onExit }: { onExit: () => void }) {
 
   const handleSquareClick = useCallback(
     (square: Square) => {
+      if (
+        (humanColor !== null && state.position.turn !== humanColor) ||
+        thinking
+      ) {
+        return;
+      }
       if (state.selected !== null && legalTargets.has(square)) {
         dispatch({ type: "attempt-move", to: square });
         return;
       }
       dispatch({ type: "select", square });
     },
-    [state.selected, legalTargets, dispatch],
+    [
+      humanColor,
+      state.position.turn,
+      state.selected,
+      legalTargets,
+      dispatch,
+      thinking,
+    ],
   );
 
   const handlePromote = useCallback(
@@ -137,6 +227,17 @@ function LocalGame({ onExit }: { onExit: () => void }) {
   const turn = state.position.turn;
   const topColor: Color = state.flipped ? "w" : "b";
   const bottomColor: Color = topColor === "w" ? "b" : "w";
+  const lastMoveColor = state.history[state.history.length - 1]?.move.color;
+  const canUndoAlgorithmMove =
+    humanColor !== null &&
+    state.history.some((entry) => entry.move.color === humanColor);
+  const undoAlgorithmMove = useCallback(() => {
+    if (!canUndoAlgorithmMove) return;
+    dispatch({
+      type: "undo-plies",
+      count: lastMoveColor === algorithmColor ? 2 : 1,
+    });
+  }, [algorithmColor, canUndoAlgorithmMove, dispatch, lastMoveColor]);
 
   return (
     <div className="app app--game">
@@ -154,7 +255,9 @@ function LocalGame({ onExit }: { onExit: () => void }) {
           />
         </div>
         <h1 className="app__title">{t.title}</h1>
-        <p className="app__subtitle">{t.localSubtitle}</p>
+        <p className="app__subtitle">
+          {humanColor === null ? t.localSubtitle : t.humanVsAlgorithm}
+        </p>
       </header>
 
       <main
@@ -166,6 +269,13 @@ function LocalGame({ onExit }: { onExit: () => void }) {
             color={topColor}
             active={topColor === turn}
             board={state.position.board}
+            player={
+              humanColor === null
+                ? null
+                : topColor === humanColor
+                  ? "human"
+                  : "algorithm"
+            }
           />
         </div>
 
@@ -237,6 +347,13 @@ function LocalGame({ onExit }: { onExit: () => void }) {
             color={bottomColor}
             active={bottomColor === turn}
             board={state.position.board}
+            player={
+              humanColor === null
+                ? null
+                : bottomColor === humanColor
+                  ? "human"
+                  : "algorithm"
+            }
           />
         </div>
 
@@ -250,18 +367,33 @@ function LocalGame({ onExit }: { onExit: () => void }) {
               <Icon name="flip" />
               {t.flipBoard}
             </button>
-            <button
-              type="button"
-              className="btn game-action"
-              onClick={() => dispatch({ type: "undo" })}
-              disabled={state.history.length === 0}
-            >
-              <Icon name="undo" />
-              {t.undo}
-            </button>
+            {humanColor === null && (
+              <button
+                type="button"
+                className="btn game-action"
+                onClick={() => dispatch({ type: "undo" })}
+                disabled={state.history.length === 0}
+              >
+                <Icon name="undo" />
+                {t.undo}
+              </button>
+            )}
+            {humanColor !== null && (
+              <button
+                type="button"
+                className="btn game-action"
+                onClick={undoAlgorithmMove}
+                disabled={!canUndoAlgorithmMove}
+              >
+                <Icon name="undo" />
+                {t.undo}
+              </button>
+            )}
           </nav>
 
           <GameStatusView status={state.status} turn={turn} />
+
+          {thinking && <div className="game-notice">{t.algorithmThinking}</div>}
 
           <MoveHistory history={state.history} />
 
@@ -303,15 +435,26 @@ function PlayerRail({
   color,
   active,
   board,
+  player,
 }: {
   color: Color;
   active: boolean;
   board: Parameters<typeof CapturedPieces>[0]["board"];
+  player: "human" | "algorithm" | null;
 }) {
-  const { colorName } = useI18n();
+  const { colorName, t } = useI18n();
+  const detail =
+    player === "human"
+      ? t.playerHuman
+      : player === "algorithm"
+        ? t.playerAlgorithm
+        : null;
   return (
     <div className={`game-side ${active ? "game-side--active" : ""}`}>
-      <span className="game-side__label">{colorName(color)}</span>
+      <span className="game-side__label">
+        {colorName(color)}
+        {detail ? ` · ${detail}` : ""}
+      </span>
       <CapturedPieces board={board} side={color} />
     </div>
   );

@@ -10,6 +10,8 @@ stateful HTTP MCP, and live board updates over SSE run in a single process.
 ## Features
 
 - A local game for two people sharing one screen.
+- A human-versus-built-in-algorithm game: negamax with alpha-beta pruning and
+  no neural networks.
 - Human-versus-agent matches with color selection in the UI.
 - Live spectating of agent-versus-agent matches.
 - A side is bound to one MCP session: an agent cannot move for its opponent or
@@ -48,6 +50,12 @@ the UI and MCP clients in separate processes.
 ### Local
 
 Two people play in the browser. No MCP connection is required.
+
+### Human versus algorithm
+
+The person selects a color and plays a built-in classical bot. The algorithm
+runs in the browser and does not use a neural network, MCP, or online match.
+Before the game, the search depth can be set to 1, 3, or up to 5 plies.
 
 ### Human versus agent
 
@@ -107,7 +115,7 @@ sessions, the UI API, and SSE.
 
 ```text
 src/
-├── engine/                 chess rules, FEN, and SAN
+├── engine/                 chess rules, FEN, SAN, and the classical bot
 ├── mcp/
 │   ├── engineApi.ts        one active game and side ownership
 │   ├── server.ts           MCP tools and agent guidance

@@ -17,3 +17,5 @@ export {
 export { makeMove } from "./makeMove";
 export { gameStatus, positionKey, hasInsufficientMaterial } from "./gameState";
 export { toSAN } from "./notation";
+export { chooseAlgorithmMove } from "./algorithm";
+export type { AlgorithmOptions } from "./algorithm";
