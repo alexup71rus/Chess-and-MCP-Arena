@@ -55,7 +55,7 @@ Two people play in the browser. No MCP connection is required.
 
 The person selects a color and plays a built-in classical bot. The algorithm
 runs in the browser and does not use a neural network, MCP, or online match.
-Before the game, the search depth can be set to 1, 3, or up to 5 plies.
+Before the game, the search depth can be set to 1, 2, or up to 3 plies.
 
 ### Human versus agent
 

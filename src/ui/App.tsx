@@ -108,7 +108,7 @@ export default function App() {
 }
 
 function difficultyDepth(difficulty: AlgorithmDifficulty): number {
-  return difficulty === "easy" ? 1 : difficulty === "medium" ? 3 : 5;
+  return difficulty === "easy" ? 1 : difficulty === "medium" ? 2 : 3;
 }
 
 /** Локальная hot-seat игра (как до интеграции с MCP), плюс кнопка выхода в меню. */
@@ -167,7 +167,7 @@ function LocalGame({
     const timer = window.setTimeout(() => {
       const move = chooseAlgorithmMove(state.position, {
         depth: algorithmDepth ?? undefined,
-        timeLimitMs: algorithmDepth === 5 ? 1_000 : undefined,
+        timeLimitMs: algorithmDepth === 3 ? 1_000 : undefined,
       });
       if (move) dispatch({ type: "play-move", move });
       setThinking(false);
