@@ -396,6 +396,7 @@ body {
 .game-sidebar {
   grid-area: sidebar;
   width: 320px;
+  height: calc(var(--board-size) + 74px);
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -413,7 +414,9 @@ body {
     0 14px 36px rgba(0, 0, 0, 0.2);
 }
 .game-sidebar .history {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  height: auto;
+  overflow: hidden;
 }
 
 /* ===== Доска ===== */
@@ -1037,6 +1040,8 @@ body {
   margin-bottom: 8px;
 }
 .history__list {
+  min-height: 0;
+  flex: 1 1 auto;
   overflow-y: auto;
   font-family: "SF Mono", "Menlo", "Consolas", monospace;
   font-size: 0.85rem;
@@ -1322,6 +1327,7 @@ body {
   }
   .game-sidebar {
     width: 100%;
+    height: auto;
     min-height: 250px;
     margin-top: 4px;
   }
@@ -1388,9 +1394,9 @@ body {
     grid-column: auto;
   }
   .game-sidebar .history {
-    flex: 0 1 auto;
-    height: 180px;
-    max-height: 180px;
+    flex: 0 0 200px;
+    height: 200px;
+    max-height: 200px;
   }
 }
 
